@@ -20,3 +20,4 @@ git config --global user.email ""
 2. 셸에 git push -u origin master 입력
 3. default branch는 settings에서 바꿀 수 있음.
 4. git remote remove origin을 할 경우, 설정된 origin을 초기화할 수 있다.
+5. git push origin --delete brach.mane을 할 경우 repository의 branch를 삭제할 수 있다.
