@@ -7,6 +7,7 @@ Mhorsehoe algorithm
 우선 git을 설치하고 셸에서 다음을 입력한다.
 
 git config --global user.name ""
+
 git config --global user.email ""
 
 이후 R 프로젝트에서 project options -> version control system을 None에서 git으로 바꾼다.
