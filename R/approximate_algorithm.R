@@ -143,7 +143,7 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
       step3_time <- Sys.time()
 
     # D matrix
-    diagonal <- ifelse(eta * xi == 0, 10^(-10), eta * xi)
+    diagonal <- ifelse(eta * xi == 0, 10^(-8), eta * xi)
     diagonal_delta <- 1/diagonal
     diagonal_delta[-active_set_column_index] <- 0
 
