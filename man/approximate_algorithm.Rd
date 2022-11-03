@@ -14,8 +14,6 @@ approximate_algorithm(
   xi = 1,
   sigma = 1,
   w = 0,
-  time_check = FALSE,
-  iteration_check = TRUE,
   step_check = FALSE
 )
 }

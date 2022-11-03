@@ -136,7 +136,7 @@ modified_approximate_algorithm <- function(W, z, iteration = 5000,
         # main concept
         if (i > 200) {
 
-        threshold <- sort(diagonal)[ceiling(m_eff) + 10]
+        threshold <- sort(diagonal)[ceiling(m_eff) + 5]
 
         }
 
