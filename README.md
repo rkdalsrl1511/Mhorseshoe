@@ -4,7 +4,13 @@ Mhorsehoe algorithm
 
 ## 업데이트 및 해야 할 것
 
-approximate algorithm step check 및 최적화 진행
+1. log(xi)의 GR, MSCE 추정하기.
+
+2. rejection sampler에 truncate도 구현하기
+
+3. dependence prior 버전으로도 하나 만들기 : dependence 버전의 경우, active set을 더 안정적으로 추정할 수 있는 것 같다. 대신 시간은 조금 더 오래 걸린다.
+
+그나마 다행인 수확은, xi를 큰 값부터 시작하면 mixing에 실패할 수도 있다는 점.
 
 ## approximate algorithm 분석
 

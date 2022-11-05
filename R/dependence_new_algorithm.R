@@ -1,5 +1,5 @@
-#' Run modified approximate algorithm
-#' @title new approximate algorithm
+#' Run modified approximate algorithm with dependence prior
+#' @title new approximate algorithm_c
 #' @param W predictor matrix
 #' @param z response variance
 #' @param iteration Number of iterations
@@ -12,10 +12,10 @@
 #' @return beta posterior samples
 #' @importFrom invgamma rinvgamma
 #' @export
-modified_approximate_algorithm <- function(W, z, iteration = 5000,
-                                           a = 1/5, b = 10, w = 0, threshold = 0,
-                                           alpha0 = -0.5, alpha1 = -7*10^(-4),
-                                           step_check = FALSE) {
+modified_approximate_algorithm_dep <- function(W, z, iteration = 5000,
+                                               a = 1/5, b = 10, w = 1, threshold = 0,
+                                               alpha0 = -0.5, alpha1 = -7*10^(-4),
+                                               step_check = FALSE) {
 
   # data size
   N <- nrow(W)
@@ -35,9 +35,8 @@ modified_approximate_algorithm <- function(W, z, iteration = 5000,
   if (step_check == TRUE) {
 
     step_checks <- data.frame(matrix(rep(0, 7), nrow = 1))
-    colnames(step_checks) <- c("total_active_column",
-                               "step1", "step2", "step3",
-                               "step4", "step5", "total_time")
+    colnames(step_checks) <- c("number of active set columns",
+                               "step1", "step2", "step3", "total_time")
 
   }
 
@@ -54,11 +53,14 @@ modified_approximate_algorithm <- function(W, z, iteration = 5000,
     }
 
     # 1. eta sampling
-    eta <- rejection_sampler((beta[i, ]^2)*xi/2, a, b)
+    eta <- rejection_sampler((beta[i, ]^2)*xi/(2 * sigma), a, b)
+    diagonal <- (eta*xi)
 
     # active_set
-    active_set_column_index <- which(eta*xi*sigma < threshold)
+    active_set_column_index <- which(diagonal < threshold)
     S <- length(active_set_column_index)
+    diagonal_delta <- 1/diagonal
+    diagonal_delta[-active_set_column_index] <- 0
 
     # active W matrix
     W_s <- W[, active_set_column_index]
@@ -66,48 +68,36 @@ modified_approximate_algorithm <- function(W, z, iteration = 5000,
     if(step_check == TRUE)
       step1_time <- Sys.time()
 
-    # 2. sigma sampling
-    e <- z - W %*% beta[i, ]
-    sigma <- rinvgamma(1,
-                       shape = (w + N)/2,
-                       rate = (w + t(e) %*% e)/2)
-
-    if(step_check == TRUE)
-      step2_time <- Sys.time()
-
-    # D matrix
-    diagonal <- (eta*xi*sigma)
-    diagonal_delta <- 1/diagonal
-    diagonal_delta[-active_set_column_index] <- 0
-
-    if(step_check == TRUE)
-      step3_time <- Sys.time()
-
-    # 3. beta sampling : using u, f, and v
+    # 2. sigma/beta sampling
     u <- rnorm(n = p, mean = 0, sd = sqrt(1/diagonal))
     f <- rnorm(n = N, mean = 0, sd = 1)
     v <- W %*% u + f
     U <- diagonal_delta * t(W)
 
+    # set inverse_M %*% z, v_star
     if (S > N) {
 
       Q <- W_s %*% U[active_set_column_index, ]
-      v_star <- solve((Q + diag(N)), ((z / sqrt(sigma)) - v))
-      new_beta <- sqrt(sigma) * (u + U %*% v_star)
+      M <- diag(N) + Q
+      inv_mz <- solve(M, z)
+      v_star <- inv_mz / sqrt(sigma) - solve(M, v)
 
     } else {
 
-      D <- diag(diagonal[active_set_column_index])
-      Q_star <- t(W_s) %*% W_s
-      zv <- ((z / sqrt(sigma)) - v)
-      m <- solve(Q_star + D, t(W_s) %*% zv)
-      m_star <- zv - W_s %*% m
-      new_beta <- sqrt(sigma) * (u + U %*% m_star)
+      Q <- t(W_s) %*% W_s
+      Q_star <- Q + diag(diagonal[active_set_column_index])
+      inv_mz <- z - W_s %*% solve(Q_star, t(W_s) %*% z)
+      v_star <- inv_mz / sqrt(sigma) - v + W_s %*% solve(Q_star, t(W_s) %*% v)
 
     }
 
+    sigma <- rinvgamma(1,
+                       shape = (w+N)/2,
+                       rate = (w + z %*% inv_mz)/2)
+    new_beta <- sqrt(sigma) * (u + U %*% v_star)
+
     if(step_check == TRUE)
-      step4_time <- Sys.time()
+      step2_time <- Sys.time()
 
     # meff 계산
     if (i %% 20 == 0) {
@@ -119,20 +109,20 @@ modified_approximate_algorithm <- function(W, z, iteration = 5000,
 
         if (S > N) {
 
-          k_star <- solve(Q + diag(N), Q)
-          m_eff <- sum(diag(k_star))
+          k_star <- solve(M, Q)
 
         } else {
 
-          k_star <- solve(Q_star + D, Q_star)
-          m_eff <- sum(diag(k_star))
+          k_star <- solve(Q_star, Q)
 
         }
+
+        m_eff <- sum(diag(k_star))
 
         # main concept
         if (i > 200) {
 
-        threshold <- sort(diagonal)[ceiling(m_eff)+5]
+          threshold <- sort(diagonal)[ceiling(m_eff)+5]
 
         }
 
@@ -140,15 +130,15 @@ modified_approximate_algorithm <- function(W, z, iteration = 5000,
 
     }
 
+    if(step_check == TRUE)
+      step3_time <- Sys.time()
+
     # save the sampled value
     beta[i+1, ] <- new_beta
     local_shrinkage_parameters[i, ] <- eta
     global_shrinkage_parameter[i] <- xi
     sigma_parameters[i] <- sigma
     active_sets[i] <- S
-
-    if(step_check == TRUE)
-      step5_time <- Sys.time()
 
     if ((i %% 500) == 0) {
 
@@ -162,11 +152,9 @@ modified_approximate_algorithm <- function(W, z, iteration = 5000,
       step1 <- step1_time - iteration_start_time
       step2 <- step2_time - step1_time
       step3 <- step3_time - step2_time
-      step4 <- step4_time - step3_time
-      step5 <- step5_time - step4_time
-      total_time <- step5_time - iteration_start_time
+      total_time <- step3_time - iteration_start_time
 
-      step_checks[i, ] <- c(S, step1, step2, step3, step4, step5, total_time)
+      step_checks[i, ] <- c(S, step1, step2, step3, total_time)
 
     }
 
