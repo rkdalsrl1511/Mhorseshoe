@@ -2,15 +2,27 @@
 
 Mhorsehoe algorithm
 
-## 업데이트 및 해야 할 것
 
-1. log(xi)의 GR, MSCE 추정하기.
 
-2. rejection sampler에 truncate도 구현하기
 
-3. dependence prior 버전으로도 하나 만들기 : dependence 버전의 경우, active set을 더 안정적으로 추정할 수 있는 것 같다. 대신 시간은 조금 더 오래 걸린다.
 
-그나마 다행인 수확은, xi를 큰 값부터 시작하면 mixing에 실패할 수도 있다는 점.
+
+## 업데이트
+
+### 11/09
+
+#### modified algorithm 수정
+
+meff 관련 앞부분으로 넣기, xi값 수정, 기타 코드 다듬기
+
+
+
+
+## 해야 할 것 
+
+1. truncate rejection sampler 구현하고, approximate algorithm 다시 관찰하기
+
+
 
 ## approximate algorithm 분석
 
@@ -63,3 +75,10 @@ git config --global user.email ""
 3. default branch는 settings에서 바꿀 수 있음.
 4. git remote remove origin을 할 경우, 설정된 origin을 초기화할 수 있다.
 5. git push origin --delete brach.name을 할 경우 repository의 branch를 삭제할 수 있다.
+
+
+깃허브의 private repository의 경우,
+
+https://rkdalsrl1511@github.com/rkdalsrl1511/Mhorseshoe.git
+
+으로 입력해야 오류가 발생하지 않음
