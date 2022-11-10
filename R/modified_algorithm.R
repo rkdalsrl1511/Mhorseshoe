@@ -56,21 +56,6 @@ modified_approximate_algorithm <- function(W, z, iteration = 5000,
     active_set_column_index <- which(eta <= threshold)
     S <- length(active_set_column_index)
 
-    if (is.na(sum(eta))) {
-
-      return(list(beta = beta[-1, ],
-                  local_shrinkage_parameter = local_shrinkage_parameters,
-                  global_shrinkage_parameter = global_shrinkage_parameter,
-                  sigma2 = sigma_parameters,
-                  meff = meffs,
-                  active_set = active_sets,
-                  diagonal_delta = diagonal_delta,
-                  diagonal = diagonal,
-                  U = U,
-                  v_star = v_star))
-
-    }
-
     diagonal <- (eta*xi)
     diagonal_delta <- 1/diagonal
     diagonal_delta[-active_set_column_index] <- 0
