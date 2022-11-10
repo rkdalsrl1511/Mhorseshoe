@@ -71,7 +71,9 @@ sample_eta <- function(eta, rejected_index, prob_v,
 
     # random select interval
     u <- runif(p, min = 0, max = 1)
-    selected_interval <- ifelse(u < prob_v[rejected_index, 1], 1, ifelse(u < prob_v[rejected_index, 1] + prob_v[rejected_index, 2], 2, ifelse(u < prob_v[rejected_index, 1] + prob_v[rejected_index, 2] + prob_v[rejected_index, 3], 3, 4)))
+    selected_interval <- ifelse(u < prob_v[rejected_index, 1], 1,
+                                ifelse(u < prob_v[rejected_index, 1] + prob_v[rejected_index, 2], 2,
+                                       ifelse(u < prob_v[rejected_index, 1] + prob_v[rejected_index, 2] + prob_v[rejected_index, 3], 3, 4)))
 
     # sample z with cdf method
     u_z <- runif(p, min = 0, max = 1)
