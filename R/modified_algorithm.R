@@ -13,7 +13,7 @@
 #' @importFrom invgamma rinvgamma
 #' @export
 modified_approximate_algorithm <- function(W, z, iteration = 5000,
-                                           a = 1/5, b = 10, w = 1,
+                                           a = 1/5, b = 10, w = 1, k = 10,
                                            alpha0 = -0.5, alpha1 = -7*10^(-4),
                                            step_check = FALSE) {
 
@@ -51,9 +51,25 @@ modified_approximate_algorithm <- function(W, z, iteration = 5000,
 
     # 1. eta sampling
     eta <- rejection_sampler((beta[i, ]^2)*xi/(2 * sigma), a, b)
+    eta <- ifelse(eta == 0, 10^(-15), eta)
     threshold <- sort(eta)[estimated_number_of_active_set]
     active_set_column_index <- which(eta <= threshold)
     S <- length(active_set_column_index)
+
+    if (is.na(sum(eta))) {
+
+      return(list(beta = beta[-1, ],
+                  local_shrinkage_parameter = local_shrinkage_parameters,
+                  global_shrinkage_parameter = global_shrinkage_parameter,
+                  sigma2 = sigma_parameters,
+                  meff = meffs,
+                  active_set = active_sets,
+                  diagonal_delta = diagonal_delta,
+                  diagonal = diagonal,
+                  U = U,
+                  v_star = v_star))
+
+    }
 
     diagonal <- (eta*xi)
     diagonal_delta <- 1/diagonal
@@ -107,7 +123,7 @@ modified_approximate_algorithm <- function(W, z, iteration = 5000,
       if (u_i < p_i) {
 
         m_eff <- sum((N-1) / (N-1+diagonal[active_set_column_index]))
-        estimated_number_of_active_set <- ceiling(m_eff) + 10
+        estimated_number_of_active_set <- ceiling(m_eff) + k
 
       }
 
