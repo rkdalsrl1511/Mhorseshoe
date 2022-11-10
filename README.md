@@ -15,7 +15,7 @@ standardized_W <- scale(W[,-1], center = TRUE, scale = TRUE)
 ############################ make_response function #############################
 # non_zero : nonzero parameter의 수 설정                                        #
 # SD : linear regression model에서 error term의 표준편차                        #
-# fixed_coefficients : NULL인 경우, -100~100사이의 값 랜덤 할당 숫자를 입력하면 #
+# fixed_coefficients : NULL인 경우, -100~100사이의 값 랜덤 할당. 숫자를 입력하면#
 # 해당 숫자를 nonzero coefficients에 할당. vector form도 가능.                  #
 # c(1,2,3,4,5,6,7,8,9,10)으로 입력할 경우 각각 1,2,3,4,5,6,7,8,9,10으로 설정 됨 #
 # 결과는 list 형태를 반환                                                       #
