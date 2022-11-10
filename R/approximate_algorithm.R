@@ -59,6 +59,7 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
     # 1. eta sampling
     epsilon <- (beta[i, ]^2)*xi/(2 * sigma)
     eta <- rejection_sampler(epsilon, a, b)
+    eta <- ifelse(eta == 0, 10^(-15), eta)
 
     # active W matrix
     active_set_column_index <- which(eta * max_xi < threshold)
@@ -143,7 +144,7 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
       step3_time <- Sys.time()
 
     # D matrix
-    diagonal <- ifelse(eta * xi == 0, 10^(-8), eta * xi)
+    diagonal <- eta * xi
     diagonal_delta <- 1/diagonal
     diagonal_delta[-active_set_column_index] <- 0
 

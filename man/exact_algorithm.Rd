@@ -11,12 +11,10 @@ exact_algorithm(
   a = 1/5,
   b = 10,
   s = 0.1,
-  time_check = FALSE,
-  iteration_check = TRUE,
-  beta = matrix(data = rep(1, times = p), nrow = 1),
   xi = 1,
   sigma = 1,
-  w = 1
+  w = 1,
+  step_check = FALSE
 )
 }
 \arguments{
@@ -30,17 +28,17 @@ exact_algorithm(
 
 \item{s}{xi's hyperparameter}
 
-\item{time_check}{Output run time}
-
-\item{iteration_check}{Output iteration}
-
-\item{beta}{the initial value of beta}
-
 \item{xi}{the initial value of Global shrinkage parameter}
 
 \item{w}{Sigma's hyperparameter}
 
 \item{fast_algorithm}{When set to a true value, a calculation is performed to reduce time complexity.}
+
+\item{time_check}{Output run time}
+
+\item{iteration_check}{Output iteration}
+
+\item{beta}{the initial value of beta}
 
 \item{Sigma}{the inial value of Sigma}
 }

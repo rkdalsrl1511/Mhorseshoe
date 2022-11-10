@@ -1,18 +1,4 @@
-#' Run modified approximate algorithm with dependence prior
-#' @title new approximate algorithm_c
-#' @param W predictor matrix
-#' @param z response variance
-#' @param iteration Number of iterations
-#' @param a,b rejection sampler parameters
-#' @param w Sigma's hyperparameter
-#' @param threshold Parameter that determines the active set
-#' @param iteration_check Output iteration
-#' @param alpha0 Parameters of adaptive probability
-#' @param alpha1 Parameters of adaptive probability
-#' @return beta posterior samples
-#' @importFrom invgamma rinvgamma
-#' @export
-modified_approximate_algorithm <- function(W, z, iteration = 5000,
+modified_approximate_algorithm_temp <- function(W, z, iteration = 5000,
                                            a = 1/5, b = 10, w = 1,
                                            alpha0 = -0.5, alpha1 = -7*10^(-4),
                                            step_check = FALSE) {
@@ -23,9 +9,11 @@ modified_approximate_algorithm <- function(W, z, iteration = 5000,
 
   # initial values
   beta <- matrix(0, nrow = iteration+1, ncol = p)
+  #xi <- 1
   xi <- p^2
   sigma <- 1
-  m_eff <- p
+  m_eff <- p-5
+  #threshold <- N*p
 
   # parameters
   local_shrinkage_parameters <- matrix(0, nrow = iteration, ncol = p)
@@ -48,24 +36,32 @@ modified_approximate_algorithm <- function(W, z, iteration = 5000,
     if (step_check == TRUE)
       iteration_start_time <- Sys.time()
 
+    #if (i == 200) {
+
+      #xi <- p^2
+
+    #}
+
     # 1. eta sampling
     eta <- rejection_sampler((beta[i, ]^2)*xi/(2 * sigma), a, b)
 
-    threshold <- sort(eta)[m_eff]
+    # main concept
+    #if (i > 200 & m_eff != 0) {
+
+      #threshold <- sort(eta)[ceiling(m_eff)+1]
+      #active_set_column_index <- which(eta <= threshold)
+
+    #} else {
+
+      #active_set_column_index <- which(eta*xi < threshold)
+
+    #}
+
+    # 실험용
+    threshold <- sort(eta)[ceiling(m_eff)+1]
     active_set_column_index <- which(eta <= threshold)
+
     S <- length(active_set_column_index)
-
-    if (S == 0) {
-
-      return(list(beta = beta[-1, ],
-                  local_shrinkage_parameter = local_shrinkage_parameters,
-                  global_shrinkage_parameter = global_shrinkage_parameter,
-                  sigma2 = sigma_parameters,
-                  meff = meffs,
-                  active_set = active_sets))
-
-    }
-
     diagonal <- (eta*xi)
     diagonal_delta <- 1/diagonal
     diagonal_delta[-active_set_column_index] <- 0
@@ -102,7 +98,6 @@ modified_approximate_algorithm <- function(W, z, iteration = 5000,
     sigma <- rinvgamma(1,
                        shape = (w+N)/2,
                        rate = (w + z %*% inv_mz)/2)
-
     new_beta <- sqrt(sigma) * (u + U %*% v_star)
 
     if(step_check == TRUE)
@@ -114,8 +109,11 @@ modified_approximate_algorithm <- function(W, z, iteration = 5000,
       u_i <- runif(1,0,1)
       p_i <- exp(alpha0 + alpha1 * i)
 
-      if (u_i < p_i)
-        m_eff <- ceiling(sum((N-1) / (N-1+diagonal[active_set_column_index]))) + 10
+      if (u_i < p_i) {
+
+        m_eff <- sum((N-1) / (N-1+diagonal))
+
+      }
 
     }
 
