@@ -11,7 +11,7 @@ modified_approximate_algorithm(
   a = 1/5,
   b = 10,
   w = 1,
-  k = 10,
+  t = 100,
   alpha0 = -0.5,
   alpha1 = -7 * 10^(-4),
   step_check = FALSE
