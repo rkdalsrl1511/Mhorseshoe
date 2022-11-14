@@ -59,6 +59,11 @@ fit_Mamcmc <- Mhorseshoe::modified_approximate_algorithm(standardized_W, z,
 
 ## 해야 할 것
 
+- modified algorithm 수정하기 : 옵션 추가하기, xi 샘플링 버전 추가 등 코드 수정
+- adaptive로 meff 탐색을 통해서 어떤 이점을 얻을 수 있는가 고민
+- approximate algorithm에서 잘 안 되는 부분 탐색(selling point)
+- 논문 탐색(horseshoe, shrinkage 관련 5개 이상 찾기)
+
 ---
 
 # approximate algorithm
