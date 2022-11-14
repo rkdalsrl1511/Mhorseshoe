@@ -64,6 +64,12 @@ fit_Mamcmc <- Mhorseshoe::modified_approximate_algorithm(standardized_W, z,
 - approximate algorithm에서 잘 안 되는 부분 탐색(selling point)
 - 논문 탐색(horseshoe, shrinkage 관련 5개 이상 찾기)
 
+
+- xi 샘플링 버전을 만들고 s값을 더 키워서 비교해보기
+- approximate에서 잘 되지 않던 버전 계속 만들어서 비교해봐야 함
+- 이거 한 번 threshold로 도출되는 active set이랑 meff로 얻은 active set을 비교해보자.
+- xi를 샘플링하지 않는 알고리즘으로 확장할 수 있다는 측면에서는?
+
 ---
 
 # approximate algorithm
