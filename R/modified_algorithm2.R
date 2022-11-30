@@ -49,6 +49,7 @@ modified_approximate_algorithm2 <- function(W, z, xi = 1, sigma = 1, iteration =
 
     # 1. eta sampling
     eta <- rejection_sampler((beta[i, ]^2)*xi/(2 * sigma), a, b)
+    eta <- ifelse(eta == 0, 10^(-15), eta)
 
     # meff 계산
     if (i %% t == 0) {
@@ -60,11 +61,9 @@ modified_approximate_algorithm2 <- function(W, z, xi = 1, sigma = 1, iteration =
 
     }
 
-
     threshold <- sort(eta)[ceiling(m_eff)]
     active_set_column_index <- which(eta <= threshold)
     S <- length(active_set_column_index)
-    eta <- ifelse(eta == 0, 10^(-15), eta)
 
     # active W matrix
     W_s <- W[, active_set_column_index, drop = FALSE]
@@ -180,6 +179,13 @@ modified_approximate_algorithm2 <- function(W, z, xi = 1, sigma = 1, iteration =
     sigma_parameters[i] <- sigma
     active_sets[i] <- S
     meffs[i] <- m_eff
+
+    if (is.na(sum(new_beta))) {
+
+      return(list(beta, eta, diagonal, diagonal_delta, u))
+
+    }
+
 
     if ((i %% 50) == 0) {
 

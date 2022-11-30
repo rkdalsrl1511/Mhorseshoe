@@ -51,8 +51,6 @@ modified_approximate_algorithm <- function(W, z, xi = NULL, iteration = 5000,
 
     # 1. eta sampling
     eta <- rejection_sampler((beta[i, ]^2)*xi/(2 * sigma), a, b)
-    eta <- ifelse(eta == 0, 10^(-15), eta)
-    diagonal <- (eta*xi)
 
     # meff 계산
     if (i %% t == 0) {
@@ -60,7 +58,7 @@ modified_approximate_algorithm <- function(W, z, xi = NULL, iteration = 5000,
       p_i <- exp(alpha0 + alpha1 * i)
 
       if (u_i < p_i)
-        m_eff <- sum( 1/(diagonal/s2.vec + 1) )
+        m_eff <- sum( 1/(eta*xi/s2.vec + 1) )
 
     }
 
@@ -68,6 +66,7 @@ modified_approximate_algorithm <- function(W, z, xi = NULL, iteration = 5000,
     active_set_column_index <- which(eta <= threshold)
     S <- length(active_set_column_index)
 
+    diagonal <- (eta*xi)
     diagonal_delta <- 1/diagonal
     diagonal_delta[-active_set_column_index] <- 0
 

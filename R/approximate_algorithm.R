@@ -59,12 +59,12 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
     # 1. eta sampling
     epsilon <- (beta[i, ]^2)*xi/(2 * sigma)
     eta <- rejection_sampler(epsilon, a, b)
+    eta <- ifelse(eta == 0, 10^(-15), eta)
 
     # active W matrix
     active_set_column_index <- which((eta * max_xi < threshold))
     S <- length(active_set_column_index)
     W_s <- W[, active_set_column_index]
-    eta <- ifelse(eta == 0, 10^(-15), eta)
 
     # step1 끝낸 시간
     if(step_check == TRUE)
