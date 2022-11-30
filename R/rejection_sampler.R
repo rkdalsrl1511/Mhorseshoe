@@ -5,6 +5,7 @@ rejection_sampler <- function(Epsilon, a = 1/5, b = 10){
   # p-dimensions
   p <- length(Epsilon)
   Epsilon <- ifelse(Epsilon == 0, 10^(-15), Epsilon)
+  eta <- rep(-1, p)
 
   # Calculate gradient lambda (0 < a < 1 < b)
   lambda2 <- lambda_calculation(Epsilon, a, 1)

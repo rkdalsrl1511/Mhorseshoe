@@ -12,7 +12,7 @@
 #' @return beta posterior samples
 #' @importFrom invgamma rinvgamma
 #' @export
-modified_approximate_algorithm <- function(W, z, iteration = 5000,
+modified_approximate_algorithm <- function(W, z, xi = NULL, iteration = 5000,
                                            a = 1/5, b = 10, w = 1, t = 100,
                                            alpha0 = -0.5, alpha1 = -7*10^(-4),
                                            step_check = FALSE) {
@@ -23,9 +23,10 @@ modified_approximate_algorithm <- function(W, z, iteration = 5000,
 
   # initial values
   beta <- matrix(0, nrow = iteration+1, ncol = p)
-  xi <- p^2
+  if(is.null(xi)) xi = p^2
   sigma <- 1
   m_eff <- p
+  s2.vec <- diag(t(W) %*% W)
 
   # parameters
   local_shrinkage_parameters <- matrix(0, nrow = iteration, ncol = p)
@@ -51,16 +52,27 @@ modified_approximate_algorithm <- function(W, z, iteration = 5000,
     # 1. eta sampling
     eta <- rejection_sampler((beta[i, ]^2)*xi/(2 * sigma), a, b)
     eta <- ifelse(eta == 0, 10^(-15), eta)
+    diagonal <- (eta*xi)
+
+    # meff 계산
+    if (i %% t == 0) {
+      u_i <- runif(1,0,1)
+      p_i <- exp(alpha0 + alpha1 * i)
+
+      if (u_i < p_i)
+        m_eff <- sum( 1/(diagonal/s2.vec + 1) )
+
+    }
+
     threshold <- sort(eta)[ceiling(m_eff)]
     active_set_column_index <- which(eta <= threshold)
     S <- length(active_set_column_index)
 
-    diagonal <- (eta*xi)
     diagonal_delta <- 1/diagonal
     diagonal_delta[-active_set_column_index] <- 0
 
     # active W matrix
-    W_s <- W[, active_set_column_index]
+    W_s <- W[, active_set_column_index, drop = FALSE]
 
     if(step_check == TRUE)
       step1_time <- Sys.time()
@@ -72,19 +84,13 @@ modified_approximate_algorithm <- function(W, z, iteration = 5000,
     U <- diagonal_delta * t(W)
 
     if (S > N) {
-
       Q <- W_s %*% U[active_set_column_index, ]
       M <- diag(N) + Q
       inv_mz <- solve(M, z)
-      v_star <- inv_mz / sqrt(sigma) - solve(M, v)
-
     } else {
-
       Q <- t(W_s) %*% W_s
-      Q_star <- Q + diag(diagonal[active_set_column_index])
+      Q_star <- Q + diag(diagonal[active_set_column_index], nrow = S)
       inv_mz <- z - W_s %*% solve(Q_star, t(W_s) %*% z)
-      v_star <- inv_mz / sqrt(sigma) - v + W_s %*% solve(Q_star, t(W_s) %*% v)
-
     }
 
     # 2. sigma sampling
@@ -92,22 +98,17 @@ modified_approximate_algorithm <- function(W, z, iteration = 5000,
                        shape = (w+N)/2,
                        rate = (w + z %*% inv_mz)/2)
 
-    # 3. beta sampling
-    new_beta <- sqrt(sigma) * (u + U %*% v_star)
-
     if(step_check == TRUE)
       step2_time <- Sys.time()
 
-    # meff 계산
-    if (i %% t == 0) {
-
-      u_i <- runif(1,0,1)
-      p_i <- exp(alpha0 + alpha1 * i)
-
-      if (u_i < p_i)
-        m_eff <- sum((N-1) / (N-1+diagonal[active_set_column_index]))
-
+    # 3. beta sampling
+    if (S > N) {
+      v_star <- inv_mz / sqrt(sigma) - solve(M, v)
+    } else {
+      v_star <- inv_mz / sqrt(sigma) - v + W_s %*% solve(Q_star, t(W_s) %*% v)
     }
+
+    new_beta <- sqrt(sigma) * (u + U %*% v_star)
 
     if(step_check == TRUE)
       step3_time <- Sys.time()

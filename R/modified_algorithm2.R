@@ -1,86 +1,87 @@
-#' Run approximate algorithm
-#' @title Approximate algorithm
+#' Run modified approximate algorithm with dependence prior
+#' @title new approximate algorithm_c
 #' @param W predictor matrix
 #' @param z response variance
 #' @param iteration Number of iterations
-#' @param a,b rejection sampler parameter
-#' @param s xi's hyperparameter
-#' @param time_check Output run time
-#' @param iteration_check Output iteration
-#' @param beta the initial value of beta
-#' @param xi the initial value of Global shrinkage parameter
-#' @param Sigma the inial value of Sigma
+#' @param a,b rejection sampler parameters
 #' @param w Sigma's hyperparameter
+#' @param threshold Parameter that determines the active set
+#' @param iteration_check Output iteration
+#' @param alpha0 Parameters of adaptive probability
+#' @param alpha1 Parameters of adaptive probability
 #' @return beta posterior samples
-#' @importFrom MASS mvrnorm
 #' @importFrom invgamma rinvgamma
 #' @export
-approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
-                                  s = 0.01, xi = 1, sigma = 1, w = 0,
-                                  step_check = FALSE) {
+modified_approximate_algorithm2 <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
+                                            a = 1/5, b = 10, s=0.01, w = 0,
+                                            t = 100, alpha0 = -0.5, alpha1 = -7*10^(-4),
+                                            step_check = FALSE) {
 
   # data size
   N <- nrow(W)
   p <- ncol(W)
-  max_xi <- 1
 
-  # threshold
-  if (p >= N) {
-
-    threshold <- p
-
-  }else {
-
-    threshold <- sqrt(N*p)
-
-  }
+  # initial values
+  beta <- matrix(0, nrow = iteration+1, ncol = p)
+  m_eff <- p
+  s2.vec <- diag(t(W) %*% W)
 
   # parameters
-  beta <- matrix(0, nrow = iteration+1, ncol = p)
-  global_shrinkage_parameters <- rep(0, iteration)
   local_shrinkage_parameters <- matrix(0, nrow = iteration, ncol = p)
+  global_shrinkage_parameter <- rep(0, iteration)
   sigma_parameters <- rep(0, iteration)
+  active_sets <- rep(0, iteration)
+  meffs <- rep(0, iteration)
 
   if (step_check == TRUE) {
 
     step_checks <- data.frame(matrix(rep(0, 6), nrow = 1))
-    colnames(step_checks) <- c("total_active_column",
-                               "step1", "step2", "step3",
-                               "step4", "total_time")
+    colnames(step_checks) <- c("number of active set columns",
+                               "step1", "step2", "step3", "step4", "total_time")
 
   }
 
   # sampling start
   for(i in 1:iteration) {
 
-    if(step_check == TRUE)
+    if (step_check == TRUE)
       iteration_start_time <- Sys.time()
 
     # 1. eta sampling
-    epsilon <- (beta[i, ]^2)*xi/(2 * sigma)
-    eta <- rejection_sampler(epsilon, a, b)
+    eta <- rejection_sampler((beta[i, ]^2)*xi/(2 * sigma), a, b)
 
-    # active W matrix
-    active_set_column_index <- which((eta * max_xi < threshold))
+    # meff 계산
+    if (i %% t == 0) {
+      u_i <- runif(1,0,1)
+      p_i <- exp(alpha0 + alpha1 * i)
+
+      if (u_i < p_i)
+        m_eff <- sum( 1/((eta*xi)/s2.vec + 1) )
+
+    }
+
+
+    threshold <- sort(eta)[ceiling(m_eff)]
+    active_set_column_index <- which(eta <= threshold)
     S <- length(active_set_column_index)
-    W_s <- W[, active_set_column_index]
     eta <- ifelse(eta == 0, 10^(-15), eta)
 
-    # step1 끝낸 시간
+    # active W matrix
+    W_s <- W[, active_set_column_index, drop = FALSE]
+
     if(step_check == TRUE)
       step1_time <- Sys.time()
 
     # 2. xi sampling
     log_xi <- rnorm(1, mean = log(xi), sd = sqrt(s))
     new_xi <- exp(log_xi)
-    max_xi <- max(xi, new_xi)
 
     # s < N인 경우 inverse_M 계산
     if (S < N) {
 
       Q <- t(W_s) %*% W_s
-      Q_star <- xi * diag(eta[active_set_column_index]) + Q
-      new_Q_star <- new_xi * diag(eta[active_set_column_index]) + Q
+      Q_star <- xi * diag(eta[active_set_column_index], nrow = S) + Q
+      new_Q_star <- new_xi * diag(eta[active_set_column_index], nrow = S) + Q
 
       k <- sqrt(det(solve(new_Q_star, Q_star) * new_xi / xi))
 
@@ -169,53 +170,58 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
 
     }
 
-    # save the sampled value
-    beta[i+1, ] <- new_beta
-    local_shrinkage_parameters[i, ] <- eta
-    global_shrinkage_parameters[i] <- xi
-    sigma_parameters[i] <- sigma
-
     if(step_check == TRUE)
       step4_time <- Sys.time()
 
+    # save the sampled value
+    beta[i+1, ] <- new_beta
+    local_shrinkage_parameters[i, ] <- eta
+    global_shrinkage_parameter[i] <- xi
+    sigma_parameters[i] <- sigma
+    active_sets[i] <- S
+    meffs[i] <- m_eff
+
     if ((i %% 50) == 0) {
 
-      cat("iteration : ", i,
-          "active : ", length(active_set_column_index),
-          "global : ", xi, "\n")
+      cat("iteration : ", i, ", active : ", active_sets[i], "\n")
+      cat("xi : ", xi, ", meff : ", meffs[i], "\n")
 
     }
 
+    # 상세 시간 체크 옵션
     if (step_check == TRUE) {
 
-      S <- length(active_set_column_index)
       step1 <- step1_time - iteration_start_time
       step2 <- step2_time - step1_time
       step3 <- step3_time - step2_time
       step4 <- step4_time - step3_time
-      total <- step4_time - iteration_start_time
+      total_time <- step4_time - iteration_start_time
 
-      step_checks[i, ] <- c(S, step1, step2, step3, step4, total)
+      step_checks[i, ] <- c(S, step1, step2, step3, step4, total_time)
 
     }
 
   }
 
   # return
-  if(step_check == TRUE) {
+  if(step_check == TRUE){
 
     return(list(beta = beta[-1, ],
-                global_shrinkage_parameter = global_shrinkage_parameters,
                 local_shrinkage_parameter = local_shrinkage_parameters,
-                sigma_parameter = sigma_parameters,
+                global_shrinkage_parameter = global_shrinkage_parameter,
+                sigma2 = sigma_parameters,
+                active_set = active_sets,
+                meff = meffs,
                 spand_time = step_checks))
 
   } else {
 
     return(list(beta = beta[-1, ],
-                global_shrinkage_parameter = global_shrinkage_parameters,
                 local_shrinkage_parameter = local_shrinkage_parameters,
-                sigma_parameter = sigma_parameters))
+                global_shrinkage_parameter = global_shrinkage_parameter,
+                sigma2 = sigma_parameters,
+                meff = meffs,
+                active_set = active_sets))
 
   }
 
