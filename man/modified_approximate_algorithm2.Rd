@@ -12,11 +12,11 @@ modified_approximate_algorithm2(
   iteration = 5000,
   a = 1/5,
   b = 10,
-  s = 0.01,
+  s = 0.001,
   w = 0,
   t = 100,
   alpha0 = -0.5,
-  alpha1 = -7 * 10^(-4),
+  alpha1 = -4 * 10^(-4),
   step_check = FALSE
 )
 }

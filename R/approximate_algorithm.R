@@ -16,7 +16,7 @@
 #' @importFrom invgamma rinvgamma
 #' @export
 approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
-                                  s = 0.01, xi = 1, sigma = 1, w = 0,
+                                  s = 0.001, xi = 1, sigma = 1, w = 0,
                                   step_check = FALSE) {
 
   # data size
@@ -45,8 +45,7 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
 
     step_checks <- data.frame(matrix(rep(0, 6), nrow = 1))
     colnames(step_checks) <- c("total_active_column",
-                               "step1", "step2", "step3",
-                               "step4", "total_time")
+                               "step1", "step2", "step3", "total_time")
 
   }
 
@@ -57,14 +56,12 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
       iteration_start_time <- Sys.time()
 
     # 1. eta sampling
-    epsilon <- (beta[i, ]^2)*xi/(2 * sigma)
-    eta <- rejection_sampler(epsilon, a, b)
-    eta <- ifelse(eta == 0, 10^(-15), eta)
+    eta <- rejection_sampler((beta[i, ]^2)*xi/(2 * sigma), a, b)
 
     # active W matrix
     active_set_column_index <- which((eta * max_xi < threshold))
     S <- length(active_set_column_index)
-    W_s <- W[, active_set_column_index]
+    W_s <- W[, active_set_column_index, drop = FALSE]
 
     # step1 끝낸 시간
     if(step_check == TRUE)
@@ -79,8 +76,8 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
     if (S < N) {
 
       Q <- t(W_s) %*% W_s
-      Q_star <- xi * diag(eta[active_set_column_index]) + Q
-      new_Q_star <- new_xi * diag(eta[active_set_column_index]) + Q
+      Q_star <- xi * diag(eta[active_set_column_index], nrow = S) + Q
+      new_Q_star <- new_xi * diag(eta[active_set_column_index], nrow = S) + Q
 
       k <- sqrt(det(solve(new_Q_star, Q_star) * new_xi / xi))
 
@@ -140,9 +137,6 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
                        shape = (w+N)/2,
                        rate = (w + zmz)/2)
 
-    if(step_check == TRUE)
-      step3_time <- Sys.time()
-
     # D matrix
     diagonal <- eta * xi
     diagonal_delta <- 1/diagonal
@@ -169,14 +163,14 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
 
     }
 
+    if(step_check == TRUE)
+      step3_time <- Sys.time()
+
     # save the sampled value
     beta[i+1, ] <- new_beta
     local_shrinkage_parameters[i, ] <- eta
     global_shrinkage_parameters[i] <- xi
     sigma_parameters[i] <- sigma
-
-    if(step_check == TRUE)
-      step4_time <- Sys.time()
 
     if ((i %% 50) == 0) {
 
@@ -192,10 +186,9 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
       step1 <- step1_time - iteration_start_time
       step2 <- step2_time - step1_time
       step3 <- step3_time - step2_time
-      step4 <- step4_time - step3_time
-      total <- step4_time - iteration_start_time
+      total <- step3_time - iteration_start_time
 
-      step_checks[i, ] <- c(S, step1, step2, step3, step4, total)
+      step_checks[i, ] <- c(S, step1, step2, step3, total)
 
     }
 

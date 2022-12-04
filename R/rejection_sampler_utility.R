@@ -88,7 +88,7 @@ sample_eta <- function(eta, rejected_index, prob_v,
     # acceptance / rejection
     u <- runif(p, min = 0, max = 1)
     eta[rejected_index] <- ifelse(u < exp(-(f- f_l)), z, -1)
-    rejected_index <- which(eta == -1)
+    rejected_index <- which(eta == -1 | eta == 0)
 
     return(sample_eta(eta, rejected_index, prob_v, Epsilon, lambda2, lambda3, a, b))
 

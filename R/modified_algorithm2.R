@@ -13,8 +13,8 @@
 #' @importFrom invgamma rinvgamma
 #' @export
 modified_approximate_algorithm2 <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
-                                            a = 1/5, b = 10, s=0.01, w = 0,
-                                            t = 100, alpha0 = -0.5, alpha1 = -7*10^(-4),
+                                            a = 1/5, b = 10, s=0.001, w = 0, t = 100,
+                                            alpha0 = -0.5, alpha1 = -4*10^(-4),
                                             step_check = FALSE) {
 
   # data size
@@ -35,9 +35,9 @@ modified_approximate_algorithm2 <- function(W, z, xi = 1, sigma = 1, iteration =
 
   if (step_check == TRUE) {
 
-    step_checks <- data.frame(matrix(rep(0, 6), nrow = 1))
+    step_checks <- data.frame(matrix(rep(0, 5), nrow = 1))
     colnames(step_checks) <- c("number of active set columns",
-                               "step1", "step2", "step3", "step4", "total_time")
+                               "step1", "step2", "step3", "total_time")
 
   }
 
@@ -49,7 +49,6 @@ modified_approximate_algorithm2 <- function(W, z, xi = 1, sigma = 1, iteration =
 
     # 1. eta sampling
     eta <- rejection_sampler((beta[i, ]^2)*xi/(2 * sigma), a, b)
-    eta <- ifelse(eta == 0, 10^(-15), eta)
 
     # meff 계산
     if (i %% t == 0) {
@@ -140,9 +139,6 @@ modified_approximate_algorithm2 <- function(W, z, xi = 1, sigma = 1, iteration =
                        shape = (w+N)/2,
                        rate = (w + zmz)/2)
 
-    if(step_check == TRUE)
-      step3_time <- Sys.time()
-
     # D matrix
     diagonal <- eta * xi
     diagonal_delta <- 1/diagonal
@@ -170,7 +166,7 @@ modified_approximate_algorithm2 <- function(W, z, xi = 1, sigma = 1, iteration =
     }
 
     if(step_check == TRUE)
-      step4_time <- Sys.time()
+      step3_time <- Sys.time()
 
     # save the sampled value
     beta[i+1, ] <- new_beta
@@ -179,13 +175,6 @@ modified_approximate_algorithm2 <- function(W, z, xi = 1, sigma = 1, iteration =
     sigma_parameters[i] <- sigma
     active_sets[i] <- S
     meffs[i] <- m_eff
-
-    if (is.na(sum(new_beta))) {
-
-      return(list(beta, eta, diagonal, diagonal_delta, u))
-
-    }
-
 
     if ((i %% 50) == 0) {
 
@@ -200,10 +189,9 @@ modified_approximate_algorithm2 <- function(W, z, xi = 1, sigma = 1, iteration =
       step1 <- step1_time - iteration_start_time
       step2 <- step2_time - step1_time
       step3 <- step3_time - step2_time
-      step4 <- step4_time - step3_time
-      total_time <- step4_time - iteration_start_time
+      total_time <- step3_time - iteration_start_time
 
-      step_checks[i, ] <- c(S, step1, step2, step3, step4, total_time)
+      step_checks[i, ] <- c(S, step1, step2, step3, total_time)
 
     }
 

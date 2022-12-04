@@ -4,8 +4,13 @@ rejection_sampler <- function(Epsilon, a = 1/5, b = 10){
 
   # p-dimensions
   p <- length(Epsilon)
-  Epsilon <- ifelse(Epsilon == 0, 10^(-4),
-                    ifelse(Epsilon >= 10^12, 10^12, Epsilon))
+
+  # Zero coefficients 관련 내용
+  Epsilon <- ifelse(Epsilon == 0, 10^(-30), Epsilon)
+
+  # xi 최댓값, eta 최솟값 조절
+  Epsilon <- ifelse(Epsilon >= 10^12, 10^12, Epsilon)
+
   eta <- rep(-1, p)
   rejected_index <- 1:p
 
