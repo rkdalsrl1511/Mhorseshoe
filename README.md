@@ -9,9 +9,6 @@ N <- 200
 p <- 1000
 W <- Mhorseshoe::make_W(N = N, p = p)
 
-# design matrix 표준화 : 반드시 이 함수로 해야함.
-standardized_W <- scale(W[,-1], center = TRUE, scale = TRUE)
-
 ############################ make_response function #############################
 # non_zero : nonzero parameter의 수 설정                                        #
 # SD : linear regression model에서 error term의 표준편차                        #
@@ -24,7 +21,7 @@ standardized_W <- scale(W[,-1], center = TRUE, scale = TRUE)
 response_list <- Mhorseshoe::make_response(standardized_W,
                                            non_zero = 10, 
                                            SD = 1, 
-                                           fixed_coefficients = c(1,2,3,4,5,6,7,8,9,10))
+                                           fixed_coefficients = 5)
 
 # response variable
 z <- response_list[[1]]
@@ -42,7 +39,6 @@ fit_amcmc <- Mhorseshoe::approximate_algorithm(standardized_W, z,
 # default 설정으로 수정한 알고리즘 데이터에 적합
 fit_Mamcmc <- Mhorseshoe::modified_approximate_algorithm(standardized_W, z,
                                                          iteration = 10000)
-
 ```
 
 ## 업데이트
@@ -57,36 +53,12 @@ fit_Mamcmc <- Mhorseshoe::modified_approximate_algorithm(standardized_W, z,
 - modified algorithm 코드 수정 : threshold값 설정할 필요 없도록 수정
 - truncate rejection sampler 만들었다가 효과가 없음을 확인
 
+### 12/05
+
+- rejection sampler 수정(Epsilon 값에 따른 eta, xi값 변동 확인)
+
 ## 해야 할 것
 
-- modified algorithm 수정하기 : 옵션 추가하기, xi 샘플링 버전 추가 등 코드 수정
-- adaptive로 meff 탐색을 통해서 어떤 이점을 얻을 수 있는가 고민
-- approximate algorithm에서 잘 안 되는 부분 탐색(selling point)
-- 논문 탐색(horseshoe, shrinkage 관련 5개 이상 찾기)
-
-
-- xi 샘플링 버전을 만들고 s값을 더 키워서 비교해보기
-- approximate에서 잘 되지 않던 버전 계속 만들어서 비교해봐야 함
-- 이거 한 번 threshold로 도출되는 active set이랑 meff로 얻은 active set을 비교해보자.
-- xi를 샘플링하지 않는 알고리즘으로 확장할 수 있다는 측면에서는?
-
----
-
-# approximate algorithm
-
-approximate algorithm의 딜레마
-
-eta를 truncate할 경우, 작은 coefficients가 0으로 shrinkage 해버린다.
-
-eta를 truncate하지 않는 경우, eta = 0이 되어서 알고리즘이 망가질 수 있다.
-
-또한, truncate를 얼마나 하느냐도 매우 중요하다.
-
-너무 작은 값으로 하면, 그럼 또 error가 발생하고, 
-
-너무 큰 값으로 하면 xi는 성장하지 않아서, shrinkage가 과도하게 발생한다.
-
----
 
 ## git 동기화 관련
 

@@ -1,15 +1,13 @@
 
 # rejection sampler function
-rejection_sampler <- function(Epsilon, a = 1/5, b = 10){
+rejection_sampler <- function(Epsilon, a = 1/5, b = 10,
+                              min_Epsilon = 10^(-30), max_Epsilon = 10^(12)){
 
   # p-dimensions
   p <- length(Epsilon)
 
-  # Zero coefficients 관련 내용
-  Epsilon <- ifelse(Epsilon == 0, 10^(-30), Epsilon)
-
-  # xi 최댓값, eta 최솟값 조절
-  Epsilon <- ifelse(Epsilon >= 10^12, 10^12, Epsilon)
+  Epsilon <- ifelse(Epsilon == 0, min_Epsilon, Epsilon)
+  Epsilon <- ifelse(Epsilon >= max_Epsilon, max_Epsilon, Epsilon)
 
   eta <- rep(-1, p)
   rejected_index <- 1:p
