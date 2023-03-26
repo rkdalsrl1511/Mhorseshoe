@@ -43,7 +43,7 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
 
   if (step_check == TRUE) {
 
-    step_checks <- data.frame(matrix(rep(0, 6), nrow = 1))
+    step_checks <- data.frame(matrix(rep(0, 5), nrow = 1))
     colnames(step_checks) <- c("total_active_column",
                                "step1", "step2", "step3", "total_time")
 

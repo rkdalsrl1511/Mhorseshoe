@@ -57,7 +57,14 @@ fit_Mamcmc <- Mhorseshoe::modified_approximate_algorithm(standardized_W, z,
 
 - rejection sampler 수정(Epsilon 값에 따른 eta, xi값 변동 확인)
 
+### 03/26
+
+- rejection sampler 부분 수정
+
 ## 해야 할 것
+
+- foreach 반복문을 통해 rejection sampler의 재귀함수 부분 수정하기
+- eta와 xi 관계 다시 한 번 확인하기
 
 
 ## git 동기화 관련

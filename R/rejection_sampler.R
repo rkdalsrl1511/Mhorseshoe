@@ -22,7 +22,8 @@ rejection_sampler <- function(Epsilon, a = 1/5, b = 10,
   prob_v <- v/total_v # p*4 matrix
 
   # Sampling Local Shrinkage Parameters
-  eta <- sample_eta(eta, rejected_index, prob_v, Epsilon, lambda2, lambda3, a, b)
+  #eta <- sample_eta(eta, rejected_index, prob_v, Epsilon, lambda2, lambda3, a, b)
+  eta <- sample_eta2(eta, rejected_index, prob_v, Epsilon, lambda2, lambda3, a, b)
 
   # return
   eta
