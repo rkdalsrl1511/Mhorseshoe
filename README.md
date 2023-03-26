@@ -59,7 +59,7 @@ fit_Mamcmc <- Mhorseshoe::modified_approximate_algorithm(standardized_W, z,
 
 ### 03/26
 
-- rejection sampler 부분 수정
+- rejection sampler 반복문 부분 수정
 
 ## 해야 할 것
 
