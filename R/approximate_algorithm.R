@@ -16,7 +16,7 @@
 #' @importFrom invgamma rinvgamma
 #' @export
 approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
-                                  s = 0.001, xi = 1, sigma = 1, w = 0,
+                                  s = 0.01, xi = 1, sigma = 1, w = 0,
                                   step_check = FALSE) {
 
   # data size
@@ -36,7 +36,7 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
   }
 
   # parameters
-  beta <- matrix(0, nrow = iteration+1, ncol = p)
+  beta <- matrix(0.01, nrow = iteration+1, ncol = p)
   global_shrinkage_parameters <- rep(0, iteration)
   local_shrinkage_parameters <- matrix(0, nrow = iteration, ncol = p)
   sigma_parameters <- rep(0, iteration)
@@ -201,7 +201,7 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
                 global_shrinkage_parameter = global_shrinkage_parameters,
                 local_shrinkage_parameter = local_shrinkage_parameters,
                 sigma_parameter = sigma_parameters,
-                spand_time = step_checks))
+                spend_time = step_checks))
 
   } else {
 

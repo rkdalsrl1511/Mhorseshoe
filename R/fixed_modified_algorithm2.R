@@ -1,6 +1,6 @@
-# Run modified approximate algorithm with dependence prior
+# Run modified approximate algorithm with fixed global shrinkage parameter and dependence prior
 #' @importFrom invgamma rinvgamma
-modified_approximate_algorithm1 <- function(W, z, xi, sigma, iteration, a, b, s, w, t,
+modified_approximate_algorithm3 <- function(W, z, xi, sigma, iteration, a, b, w, t,
                                             alpha0, alpha1, step_check) {
 
   # data size
@@ -9,6 +9,7 @@ modified_approximate_algorithm1 <- function(W, z, xi, sigma, iteration, a, b, s,
 
   # initial values
   beta <- matrix(0.01, nrow = iteration+1, ncol = p)
+  if(is.null(xi)) xi = p^2
   m_eff <- p
   s2.vec <- diag(t(W) %*% W)
 
@@ -45,7 +46,7 @@ modified_approximate_algorithm1 <- function(W, z, xi, sigma, iteration, a, b, s,
       p_i <- exp(alpha0 + alpha1 * i)
 
       if (u_i < p_i)
-        m_eff <- sum(1/((eta*xi)/s2.vec + 1))
+        m_eff <- sum( 1/(eta*xi/s2.vec + 1) )
 
     }
 
@@ -53,103 +54,45 @@ modified_approximate_algorithm1 <- function(W, z, xi, sigma, iteration, a, b, s,
     active_set_column_index <- which(eta <= threshold)
     S <- length(active_set_column_index)
 
-    # active W matrix
-    W_s <- W[, active_set_column_index, drop = FALSE]
-
-    # 2. xi sampling
-    log_xi <- rnorm(1, mean = log(xi), sd = sqrt(s))
-    new_xi <- exp(log_xi)
-
-    # s < N인 경우 inverse_M 계산
-    if (S < N) {
-
-      Q <- t(W_s) %*% W_s
-      Q_star <- xi * diag(eta[active_set_column_index], nrow = S) + Q
-      new_Q_star <- new_xi * diag(eta[active_set_column_index], nrow = S) + Q
-
-      k <- sqrt(det(solve(new_Q_star, Q_star) * new_xi / xi))
-
-      wz <- t(W_s) %*% z
-      m <- solve(Q_star, wz)
-      new_m <- solve(new_Q_star, wz)
-      z_square <- t(z) %*% z
-      zmz <- z_square - t(z) %*% W_s %*% m
-      new_zmz <- z_square - t(z) %*% W_s %*% new_m
-
-      acceptance_probability <- probability_a(N, xi, new_xi, k, zmz, new_zmz, w)
-      u <- runif(n = 1, min = 0, max = 1)
-
-      # new xi accept/reject process
-      if (u < acceptance_probability) {
-
-        xi <- new_xi
-        zmz <- new_zmz
-        Q_star <- new_Q_star
-
-      }
-
-      # s >= N인 경우 inverse_M 계산
-    } else {
-
-      # M matrix
-      dw <- (1/eta[active_set_column_index]) * t(W_s)
-      WDW <- W_s %*% dw
-      M <- diag(N) + WDW/xi
-      new_M <- diag(N) + WDW/new_xi
-
-      k <- sqrt(det(solve(new_M, M)))
-
-      m <- solve(M, z)
-      new_m <- solve(new_M, z)
-      zmz <- t(z) %*% m
-      new_zmz <- t(z) %*% new_m
-
-      acceptance_probability <- probability_a(N, xi, new_xi, k, zmz, new_zmz, w)
-      u <- runif(n = 1, min = 0, max = 1)
-
-      # new xi accept/reject process
-      if (u < acceptance_probability) {
-
-        xi <- new_xi
-        zmz <- new_zmz
-        M <- new_M
-
-      }
-    }
-
-    if(step_check == TRUE)
-      step2_time <- Sys.time()
-
-    # 3. sigma sampling
-    sigma <- rinvgamma(1,
-                       shape = (w+N)/2,
-                       rate = (w + zmz)/2)
-
-    # D matrix
-    diagonal <- eta * xi
+    diagonal <- (eta*xi)
     diagonal_delta <- 1/diagonal
     diagonal_delta[-active_set_column_index] <- 0
 
-    # 4. beta sampling : using u, f, and v
+    # active W matrix
+    W_s <- W[, active_set_column_index, drop = FALSE]
+
+    # set inverse_M %*% z, v_star
     u <- rnorm(n = p, mean = 0, sd = sqrt(1/diagonal))
     f <- rnorm(n = N, mean = 0, sd = 1)
     v <- W %*% u + f
     U <- diagonal_delta * t(W)
 
-    if (S < N) {
-
-      zv <- z / sqrt(sigma) - v
-      wzv <- t(W_s) %*% zv
-      m <- solve(Q_star, wzv)
-      m_star <- zv - W_s %*% m
-      new_beta <- sqrt(sigma) * (u + U %*% m_star)
-
+    if (S > N) {
+      Q <- W_s %*% U[active_set_column_index, ]
+      M <- diag(N) + Q
+      inv_mz <- solve(M, z)
     } else {
-
-      v_star <- solve(M, (z / sqrt(sigma) - v))
-      new_beta <- sqrt(sigma) * (u + U %*% v_star)
-
+      Q <- t(W_s) %*% W_s
+      Q_star <- Q + diag(diagonal[active_set_column_index], nrow = S)
+      inv_mz <- z - W_s %*% solve(Q_star, t(W_s) %*% z)
     }
+
+    # 2. sigma sampling
+    sigma <- rinvgamma(1,
+                       shape = (w+N)/2,
+                       rate = (w + z %*% inv_mz)/2)
+
+    if(step_check == TRUE)
+      step2_time <- Sys.time()
+
+    # 3. beta sampling
+    if (S > N) {
+      v_star <- inv_mz / sqrt(sigma) - solve(M, v)
+    } else {
+      v_star <- inv_mz / sqrt(sigma) - v + W_s %*% solve(Q_star, t(W_s) %*% v)
+    }
+
+    new_beta <- sqrt(sigma) * (u + U %*% v_star)
 
     if(step_check == TRUE)
       step3_time <- Sys.time()
@@ -164,9 +107,7 @@ modified_approximate_algorithm1 <- function(W, z, xi, sigma, iteration, a, b, s,
 
     if ((i %% 50) == 0) {
 
-      cat("iteration : ", i,
-          "active : ", active_sets[i],
-          "global : ", xi, "\n")
+      cat("iteration : ", i, ", active : ", active_sets[i], "\n")
 
     }
 

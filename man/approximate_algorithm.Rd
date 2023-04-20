@@ -10,7 +10,7 @@ approximate_algorithm(
   iteration = 1000,
   a = 1/5,
   b = 10,
-  s = 0.001,
+  s = 0.01,
   xi = 1,
   sigma = 1,
   w = 0,
