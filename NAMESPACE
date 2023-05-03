@@ -2,8 +2,8 @@
 
 export(approximate_algorithm)
 export(exact_algorithm)
-export(make_W)
-export(make_response)
-export(modified_approximate_algorithm)
+export(fixed_modified)
+export(make_simulation_data)
+export(sampling_modified)
 importFrom(MASS,mvrnorm)
 importFrom(invgamma,rinvgamma)

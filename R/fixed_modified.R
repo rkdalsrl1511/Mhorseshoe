@@ -1,14 +1,17 @@
 # Run modified approximate algorithm with fixed global shrinkage parameter and dependence prior
 #' @importFrom invgamma rinvgamma
-modified_approximate_algorithm3 <- function(W, z, xi, sigma, iteration, a, b, w, t,
-                                            alpha0, alpha1, step_check) {
+#' @export
+fixed_modified <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
+                           a = 1/5, b = 10, w = 0,
+                           t = 50, alpha0 = -0.5, alpha1 = -7*10^(-4),
+                           step_check = FALSE) {
 
   # data size
   N <- nrow(W)
   p <- ncol(W)
 
   # initial values
-  beta <- matrix(0.01, nrow = iteration+1, ncol = p)
+  beta <- matrix(10^(-4), nrow = iteration+1, ncol = p)
   if(is.null(xi)) xi = p^2
   m_eff <- p
   s2.vec <- diag(t(W) %*% W)
@@ -46,7 +49,7 @@ modified_approximate_algorithm3 <- function(W, z, xi, sigma, iteration, a, b, w,
       p_i <- exp(alpha0 + alpha1 * i)
 
       if (u_i < p_i)
-        m_eff <- sum( 1/(eta*xi/s2.vec + 1) )
+        m_eff <- sum(1/(eta*xi/s2.vec + 1))
 
     }
 

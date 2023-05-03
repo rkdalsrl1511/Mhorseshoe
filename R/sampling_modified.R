@@ -1,7 +1,10 @@
 # Run modified approximate algorithm with dependence prior
 #' @importFrom invgamma rinvgamma
-modified_approximate_algorithm1 <- function(W, z, xi, sigma, iteration, a, b, s, w, t,
-                                            alpha0, alpha1, step_check) {
+#' @export
+sampling_modified <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
+                              a = 1/5, b = 10, s = 0.01, w = 0,
+                              t = 50, alpha0 = -0.5, alpha1 = -7*10^(-4),
+                              step_check = FALSE) {
 
   # data size
   N <- nrow(W)

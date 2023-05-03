@@ -1,13 +1,12 @@
 
 # rejection sampler function
-rejection_sampler <- function(Epsilon, a = 1/5, b = 10,
-                              min_Epsilon = 10^(-30), max_Epsilon = 10^(12)){
+rejection_sampler <- function(Epsilon, a = 1/5, b = 10, max_Epsilon = 10^(6)){
 
   # p-dimensions
   p <- length(Epsilon)
 
-  #Epsilon <- ifelse(Epsilon == 0, min_Epsilon, Epsilon)
-  #Epsilon <- ifelse(Epsilon >= max_Epsilon, max_Epsilon, Epsilon)
+  #Epsilon <- ifelse(Epsilon <= min_epsilon, min_Epsilon, Epsilon)
+  Epsilon <- ifelse(Epsilon >= max_Epsilon, max_Epsilon, Epsilon)
 
   eta <- rep(-1, p)
   rejected_index <- 1:p
