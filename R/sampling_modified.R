@@ -11,7 +11,7 @@ sampling_modified <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
   p <- ncol(W)
 
   # initial values
-  beta <- matrix(0.01, nrow = iteration+1, ncol = p)
+  beta <- matrix(10^(-4), nrow = iteration+1, ncol = p)
   m_eff <- p
   s2.vec <- diag(t(W) %*% W)
 
