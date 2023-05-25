@@ -17,7 +17,8 @@
 #' @export
 approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
                                   s = 0.01, xi = 1, sigma = 1, w = 1,
-                                  max_Epsilon = 10^(15), step_check = FALSE) {
+                                  max_Epsilon = 10^(15), tolerance=1e-20,
+                                  step_check = FALSE) {
 
   # data size
   N <- nrow(W)
@@ -79,11 +80,11 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
       Q_star <- xi * diag(eta[active_set_column_index], nrow = S) + Q
       new_Q_star <- new_xi * diag(eta[active_set_column_index], nrow = S) + Q
 
-      k <- sqrt(det(solve(new_Q_star, Q_star) * new_xi / xi))
+      k <- sqrt(det(solve(new_Q_star, Q_star, tol=tolerance) * new_xi / xi))
 
       wz <- t(W_s) %*% z
-      m <- solve(Q_star, wz)
-      new_m <- solve(new_Q_star, wz)
+      m <- solve(Q_star, wz, tol=tolerance)
+      new_m <- solve(new_Q_star, wz, tol=tolerance)
       z_square <- t(z) %*% z
       zmz <- z_square - t(z) %*% W_s %*% m
       new_zmz <- z_square - t(z) %*% W_s %*% new_m
@@ -109,10 +110,10 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
       M <- diag(N) + WDW/xi
       new_M <- diag(N) + WDW/new_xi
 
-      k <- sqrt(det(solve(new_M, M)))
+      k <- sqrt(det(solve(new_M, M, tol=tolerance)))
 
-      m <- solve(M, z)
-      new_m <- solve(new_M, z)
+      m <- solve(M, z, tol=tolerance)
+      new_m <- solve(new_M, z, tol=tolerance)
       zmz <- t(z) %*% m
       new_zmz <- t(z) %*% new_m
 
@@ -152,13 +153,13 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
 
       zv <- z / sqrt(sigma) - v
       wzv <- t(W_s) %*% zv
-      m <- solve(Q_star, wzv)
+      m <- solve(Q_star, wzv, tol=tolerance)
       m_star <- zv - W_s %*% m
       new_beta <- sqrt(sigma) * (u + U %*% m_star)
 
     } else {
 
-      v_star <- solve(M, (z / sqrt(sigma) - v))
+      v_star <- solve(M, (z / sqrt(sigma) - v), tol=tolerance)
       new_beta <- sqrt(sigma) * (u + U %*% v_star)
 
     }
