@@ -16,8 +16,8 @@
 #' @importFrom invgamma rinvgamma
 #' @export
 approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
-                                  s = 0.01, xi = 1, sigma = 1, w = 0,
-                                  step_check = FALSE) {
+                                  s = 0.01, xi = 1, sigma = 1, w = 1,
+                                  max_Epsilon = 10^(8), step_check = FALSE) {
 
   # data size
   N <- nrow(W)
@@ -56,7 +56,7 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
       iteration_start_time <- Sys.time()
 
     # 1. eta sampling
-    eta <- rejection_sampler((beta[i, ]^2)*xi/(2 * sigma), a, b)
+    eta <- rejection_sampler((beta[i, ]^2)*xi/(2 * sigma), a, b, max_Epsilon = max_Epsilon)
 
     # active W matrix
     active_set_column_index <- which((eta * max_xi < threshold))

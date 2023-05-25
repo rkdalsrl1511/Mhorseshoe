@@ -2,7 +2,7 @@
 #' @importFrom invgamma rinvgamma
 #' @export
 sampling_modified <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
-                              a = 1/5, b = 10, s = 0.01, w = 0,
+                              a = 1/5, b = 10, s = 0.01, w = 1,
                               t = 50, alpha0 = -0.5, alpha1 = -7*10^(-4),
                               step_check = FALSE) {
 
