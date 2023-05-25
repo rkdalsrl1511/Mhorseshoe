@@ -17,7 +17,7 @@
 #' @export
 approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
                                   s = 0.01, xi = 1, sigma = 1, w = 1,
-                                  max_Epsilon = 10^(8), step_check = FALSE) {
+                                  max_Epsilon = 10^(15), step_check = FALSE) {
 
   # data size
   N <- nrow(W)

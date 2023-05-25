@@ -1,6 +1,6 @@
 
 # rejection sampler function
-rejection_sampler <- function(Epsilon, a = 1/5, b = 10, max_Epsilon = 10^(15)){
+rejection_sampler <- function(Epsilon, a = 1/5, b = 10, max_Epsilon){
 
   # p-dimensions
   p <- length(Epsilon)
