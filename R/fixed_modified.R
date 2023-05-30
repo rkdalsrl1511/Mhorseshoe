@@ -2,7 +2,7 @@
 #' @importFrom invgamma rinvgamma
 #' @export
 fixed_modified <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
-                           a = 1/5, b = 10, w = 1,
+                           a = 1/5, b = 10, max_Epsilon = 10^(8), w = 1,
                            t = 50, alpha0 = -0.5, alpha1 = -7*10^(-4),
                            step_check = FALSE) {
 
@@ -10,10 +10,19 @@ fixed_modified <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
   N <- nrow(W)
   p <- ncol(W)
 
+  # threshold
+  if (p >= N) {
+
+    threshold <- p
+
+  }else {
+
+    threshold <- sqrt(N*p)
+
+  }
+
   # initial values
   beta <- matrix(10^(-4), nrow = iteration+1, ncol = p)
-  if(is.null(xi)) xi = p^2
-  m_eff <- p
   s2.vec <- diag(t(W) %*% W)
 
   # parameters
@@ -38,22 +47,24 @@ fixed_modified <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
       iteration_start_time <- Sys.time()
 
     # 1. eta sampling
-    eta <- rejection_sampler((beta[i, ]^2)*xi/(2 * sigma), a, b)
+    eta <- rejection_sampler((beta[i, ]^2)*xi/(2 * sigma), a, b, max_Epsilon)
 
     if(step_check == TRUE)
       step1_time <- Sys.time()
 
     # meff 계산
+    m_eff <- sum(1/(eta*xi/s2.vec + 1))
+
     if (i %% t == 0) {
+
       u_i <- runif(1,0,1)
       p_i <- exp(alpha0 + alpha1 * i)
 
       if (u_i < p_i)
-        m_eff <- sum(1/(eta*xi/s2.vec + 1))
+        threshold <- sort(eta)[ceiling(m_eff)]
 
     }
 
-    threshold <- sort(eta)[ceiling(m_eff)]
     active_set_column_index <- which(eta <= threshold)
     S <- length(active_set_column_index)
 
