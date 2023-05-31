@@ -4,12 +4,12 @@
 #' @param W W matrix
 #' @param non_zero Number of non_zero signals
 #' @export
-make_simulation_data <- function(N = 500, p = 1000, W_mean = 0, W_sd = 1, W_scaling = NULL,
+make_simulation_data <- function(N = 500, p = 5000, Johndraw = FALSE,
+                                 W_mean = 0, W_sd = 1, W_scaling = NULL,
                                  non_zero = 30, error_sd = 1, fixed_coefficients = NULL) {
 
+
   W <- matrix(1, nrow = N, ncol = p)
-
-
 
   if (is.null(W_scaling) == TRUE) {
 
@@ -40,37 +40,59 @@ make_simulation_data <- function(N = 500, p = 1000, W_mean = 0, W_sd = 1, W_scal
 
   }
 
-  # non_zero column을 랜덤으로 할당
-  non_zero_index <- sample(1:ncol(W), size = non_zero, replace = FALSE)
-  non_zero_coefficients <- vector(mode = "numeric", length = non_zero)
+  if (Johndraw == TRUE) {
 
-  # z : response variable
-  z <- vector(mode = "numeric", length = nrow(W))
-  e <- rnorm(N, mean = 0, sd = error_sd)
+    # non_zero column을 랜덤으로 할당
+    non_zero_index <- 1:23
+    non_zero_coefficients <- vector(mode = "numeric", length = 23)
 
-  # non_zero coefficients을 -10~10 사이 값으로 설정
-  for(i in 1:length(non_zero_index)) {
+    for (i in 1:length(non_zero_coefficients))
+      non_zero_coefficients[i] <- 2^(9/4 - i/4)
 
-    if (is.null(fixed_coefficients) == TRUE) {
+    # z : response variable
+    z <- vector(mode = "numeric", length = nrow(W))
+    e <- rnorm(N, mean = 0, sd = 2)
 
-      coef <- round(runif(1,-10,10), digits = 0)
+    for (i in 1:length(non_zero_index))
+      z <- z + non_zero_coefficients[i] * W[, non_zero_index[i]]
 
-    } else if (length(fixed_coefficients) == 1) {
+    z <- z + e
 
-      coef <- fixed_coefficients
+  } else {
 
-    } else {
+    # non_zero column을 랜덤으로 할당
+    non_zero_index <- sample(1:ncol(W), size = non_zero, replace = FALSE)
+    non_zero_coefficients <- vector(mode = "numeric", length = non_zero)
 
-      coef <- fixed_coefficients[i]
+    # z : response variable
+    z <- vector(mode = "numeric", length = nrow(W))
+    e <- rnorm(N, mean = 0, sd = error_sd)
+
+    # non_zero coefficients을 -10~10 사이 값으로 설정
+    for(i in 1:length(non_zero_index)) {
+
+      if (is.null(fixed_coefficients) == TRUE) {
+
+        coef <- round(runif(1,-10,10), digits = 0)
+
+      } else if (length(fixed_coefficients) == 1) {
+
+        coef <- fixed_coefficients
+
+      } else {
+
+        coef <- fixed_coefficients[i]
+
+      }
+
+      non_zero_coefficients[i] <- coef
+      z <- z + coef * W[, non_zero_index[i]]
 
     }
 
-    non_zero_coefficients[i] <- coef
-    z <- z + coef * W[, non_zero_index[i]]
+    z <- z + e
 
   }
-
-  z <- z + e
 
   # 정보 출력
   for (i in 1:length(non_zero_index)) {

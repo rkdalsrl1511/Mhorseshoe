@@ -10,20 +10,34 @@ sampling_modified <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
   N <- nrow(W)
   p <- ncol(W)
 
-  # threshold
-  if (p >= N) {
-
-    threshold <- p
-
-  }else {
-
-    threshold <- sqrt(N*p)
-
-  }
-
   # initial values
-  beta <- matrix(10^(-4), nrow = iteration+1, ncol = p)
-  s2.vec <- diag(t(W) %*% W)
+  beta <- matrix(0, nrow = iteration+1, ncol = p)
+  Q_star <- t(W) %*% W
+  s2.vec <- diag(Q_star)
+  m_eff <- p
+
+  # 임시 테스트용 -------------------------------------------------------------
+  l0 <- rep(0, p)
+  l1 <- rep(1, N)
+  l2 <- rep(1, p)
+
+  if (p > N) {
+    lambda_star <- sqrt(1/xi) * 1
+    U <- as.numeric(lambda_star^2) * t(W)
+    u <- stats::rnorm(l2, l0, lambda_star)
+    v <- W %*% u + stats::rnorm(N)
+    v_star <- solve((W %*% U + diag(N)), ((z/sqrt(sigma)) - v))
+    beta[1, ] <- sqrt(sigma) * (u + U %*% v_star)
+  }
+  else {
+    lambda_star <- sqrt(1/xi) * 1
+    L <- chol((1/sigma) * (Q_star + diag(1/as.numeric(lambda_star^2), p, p)))
+    v <- solve(t(L), t(t(z) %*% W)/sigma)
+    mu <- solve(L, v)
+    u <- solve(L, stats::rnorm(p))
+    beta[1, ] <- mu + u
+  }
+  # 임시 테스트용 -------------------------------------------------------------
 
   # parameters
   local_shrinkage_parameters <- matrix(0, nrow = iteration, ncol = p)
@@ -52,19 +66,18 @@ sampling_modified <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
     if(step_check == TRUE)
       step1_time <- Sys.time()
 
-    # meff 계산
-    m_eff <- sum(1/((eta*xi)/s2.vec + 1))
-
+    # meff 계산 및 threshold 수정
     if (i %% t == 0) {
 
       u_i <- runif(1,0,1)
       p_i <- exp(alpha0 + alpha1 * i)
 
       if (u_i < p_i)
-        threshold <- sort(eta)[ceiling(m_eff)]
+        m_eff <- sum(1/((eta*xi)/s2.vec + 1))
 
     }
 
+    threshold <- sort(eta)[ceiling(m_eff)]
     active_set_column_index <- which(eta <= threshold)
     S <- length(active_set_column_index)
 

@@ -6,7 +6,8 @@
 \usage{
 make_simulation_data(
   N = 500,
-  p = 1000,
+  p = 5000,
+  Johndraw = FALSE,
   W_mean = 0,
   W_sd = 1,
   W_scaling = NULL,

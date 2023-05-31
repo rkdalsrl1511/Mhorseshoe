@@ -23,7 +23,7 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
   # data size
   N <- nrow(W)
   p <- ncol(W)
-  max_xi <- 1
+  max_xi <- max(xi, 1)
 
   # threshold
   if (p >= N) {
@@ -37,10 +37,34 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
   }
 
   # parameters
-  beta <- matrix(10^(-4), nrow = iteration+1, ncol = p)
+  beta <- matrix(0, nrow = iteration+1, ncol = p)
   global_shrinkage_parameters <- rep(0, iteration)
   local_shrinkage_parameters <- matrix(0, nrow = iteration, ncol = p)
   sigma_parameters <- rep(0, iteration)
+
+  # 임시 테스트용 -------------------------------------------------------------
+  l0 <- rep(0, p)
+  l1 <- rep(1, N)
+  l2 <- rep(1, p)
+
+  if (p > N) {
+    lambda_star <- sqrt(1/xi) * 1
+    U <- as.numeric(lambda_star^2) * t(W)
+    u <- stats::rnorm(l2, l0, lambda_star)
+    v <- W %*% u + stats::rnorm(N)
+    v_star <- solve((W %*% U + diag(N)), ((z/sqrt(sigma)) - v))
+    beta[1, ] <- sqrt(sigma) * (u + U %*% v_star)
+  }
+  else {
+    Q_star <- t(W) %*% W
+    lambda_star <- sqrt(1/xi) * 1
+    L <- chol((1/sigma) * (Q_star + diag(1/as.numeric(lambda_star^2), p, p)))
+    v <- solve(t(L), t(t(z) %*% W)/sigma)
+    mu <- solve(L, v)
+    u <- solve(L, stats::rnorm(p))
+    beta[1, ] <- mu + u
+  }
+  # 임시 테스트용 -------------------------------------------------------------
 
   if (step_check == TRUE) {
 
