@@ -14,6 +14,7 @@ exact_algorithm(
   xi = 1,
   sigma = 1,
   w = 1,
+  max_Epsilon = 10^(8),
   step_check = FALSE
 )
 }

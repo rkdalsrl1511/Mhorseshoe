@@ -2,8 +2,8 @@
 #' @importFrom invgamma rinvgamma
 #' @export
 fixed_modified <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
-                           a = 1/5, b = 10, max_Epsilon = 10^(8), w = 1,
-                           t = 50, alpha0 = -0.5, alpha1 = -7*10^(-4),
+                           a = 1/5, b = 10, max_Epsilon = 10^(30), w = 1,
+                           t = 50, alpha0 = 0, alpha1 = -9*10^(-4),
                            step_check = FALSE) {
 
   # data size
@@ -12,8 +12,8 @@ fixed_modified <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
 
   # initial values
   beta <- matrix(0, nrow = iteration+1, ncol = p)
-  Q_star <- t(W) %*% W
-  s2.vec <- diag(Q_star)
+  Q <- t(W) %*% W
+  s2.vec <- diag(Q)
   m_eff <- p
 
   # 임시 테스트용 -------------------------------------------------------------
@@ -31,15 +31,13 @@ fixed_modified <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
   }
   else {
     lambda_star <- sqrt(1/xi) * 1
-    L <- chol((1/sigma) * (Q_star + diag(1/as.numeric(lambda_star^2), p, p)))
+    L <- chol((1/sigma) * (Q + diag(1/as.numeric(lambda_star^2), p, p)))
     v <- solve(t(L), t(t(z) %*% W)/sigma)
     mu <- solve(L, v)
     u <- solve(L, stats::rnorm(p))
     beta[1, ] <- mu + u
   }
   # 임시 테스트용 -------------------------------------------------------------
-
-  print("통과")
 
   # parameters
   local_shrinkage_parameters <- matrix(0, nrow = iteration, ncol = p)
@@ -101,8 +99,7 @@ fixed_modified <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
       M <- diag(N) + Q
       inv_mz <- solve(M, z)
     } else {
-      Q <- t(W_s) %*% W_s
-      Q_star <- Q + diag(diagonal[active_set_column_index], nrow = S)
+      Q_star <- Q[active_set_column_index, active_set_column_index, drop = FALSE] + diag(diagonal[active_set_column_index], nrow = S)
       inv_mz <- z - W_s %*% solve(Q_star, t(W_s) %*% z)
     }
 
@@ -163,7 +160,7 @@ fixed_modified <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
                 sigma2 = sigma_parameters,
                 active_set = active_sets,
                 meff = meffs,
-                spand_time = step_checks))
+                spend_time = step_checks))
 
   } else {
 
