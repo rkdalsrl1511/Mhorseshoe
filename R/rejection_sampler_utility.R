@@ -26,7 +26,7 @@ v_calculation <- function(Epsilon, lambda2, lambda3, a, b){
 
   v <- cbind(v1, v2, v3, v4)
 
-  v
+  return(v)
 
 }
 
@@ -39,7 +39,7 @@ f_L_z <- function(selected_interval, Epsilon, z, a, b, lambda2, lambda3){
                           ifelse(selected_interval == 3,
                                  f_e_x(Epsilon, 1/Epsilon) + lambda3 * (z - b/Epsilon), f_e_x(Epsilon, b/Epsilon) + Epsilon * (z - b/Epsilon))))
 
-  result
+  return(result)
 
 }
 
@@ -54,38 +54,38 @@ sample_z <- function(selected_interval, Epsilon,
                             1/Epsilon - log(1 - u + u * exp(-(f_e_x(Epsilon, b/Epsilon) - f_e_x(Epsilon, 1/Epsilon))))/lambda3,
                             b/Epsilon - log(1 - u)/Epsilon)))
 
-  z
+  return(z)
 
 }
 
-sample_eta <- function(eta, rejected_index, prob_v,
-                       Epsilon, lambda2, lambda3, a, b) {
+sample_eta <- function(p, prob_v, Epsilon, lambda2, lambda3, a, b) {
 
-  p <- length(rejected_index)
+  eta <- rep(1, p)
+  idx <- 1:p
 
   while(p != 0){
 
     # random select interval
     u <- runif(p, min = 0, max = 1)
-    selected_interval <- ifelse(u < prob_v[rejected_index, 1], 1,
-                                ifelse(u < prob_v[rejected_index, 1] + prob_v[rejected_index, 2], 2,
-                                       ifelse(u < prob_v[rejected_index, 1] + prob_v[rejected_index, 2] + prob_v[rejected_index, 3], 3, 4)))
+    selected_interval <- ifelse(u < prob_v[idx, 1], 1,
+                                ifelse(u < prob_v[idx, 1] + prob_v[idx, 2], 2,
+                                       ifelse(u < prob_v[idx, 1] + prob_v[idx, 2] + prob_v[idx, 3], 3, 4)))
 
     # sample z with cdf method
     u_z <- runif(p, min = 0, max = 1)
-    z <- sample_z(selected_interval, Epsilon[rejected_index],
-                  lambda2[rejected_index], lambda3[rejected_index],
+    z <- sample_z(selected_interval, Epsilon[idx],
+                  lambda2[idx], lambda3[idx],
                   u_z, a, b)
 
-    f_l <- f_L_z(selected_interval, Epsilon[rejected_index],
-                 z, a, b, lambda2[rejected_index], lambda3[rejected_index])
-    f <- f_e_x(Epsilon[rejected_index], z)
+    f_l <- f_L_z(selected_interval, Epsilon[idx],
+                 z, a, b, lambda2[idx], lambda3[idx])
+    f <- f_e_x(Epsilon[idx], z)
 
     # acceptance / rejection
     u <- runif(p, min = 0, max = 1)
-    eta[rejected_index] <- ifelse(u < exp(-(f- f_l)), z, -1)
-    rejected_index <- which(eta == -1 | eta == 0)
-    p <- length(rejected_index)
+    eta[idx] <- ifelse(u < exp(-(f- f_l)), z, -1)
+    idx <- which(eta == -1)
+    p <- length(idx)
 
   }
 

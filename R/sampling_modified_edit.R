@@ -2,8 +2,8 @@
 #' @importFrom invgamma rinvgamma
 #' @export
 sampling_modified_edit <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
-                                   a = 1/5, b = 10, max_Epsilon = 10^(8), s = 1, w = 1,
-                                   m_eff = NULL, t = 50, alpha0 = -0.5, alpha1 = -7*10^(-4),
+                                   a = 1/5, b = 10, s = 0.8, w = 1,
+                                   t = 10, alpha0 = 0, alpha1 = -9*10^(-4),
                                    step_check = FALSE) {
 
   # data size
@@ -12,19 +12,11 @@ sampling_modified_edit <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
 
   # initial values
   S <- p
-  active_set_column_index <- 1:p
-  if (is.null(m_eff))
-    m_eff <- p
+  active_index <- 1:p
+  m_eff <- p
   eta <- rep(1, p)
   Q <- t(W) %*% W
   s2.vec <- diag(Q)
-  if (p < N)
-    Q_star <- xi * diag(eta) + Q
-  else {
-    dw <- (1/eta) * t(W)
-    WDW <- W %*% dw
-    M <- diag(N) + WDW/xi
-  }
 
   # parameters
   beta <- matrix(0, nrow = iteration, ncol = p)
@@ -48,79 +40,25 @@ sampling_modified_edit <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
     if (step_check == TRUE)
       iteration_start_time <- Sys.time()
 
-    diagonal <- eta * xi
-    diagonal_delta <- 1/diagonal
-    diagonal_delta[-active_set_column_index] <- 0
+    Q_s <- Q[active_index, active_index, drop = FALSE]
+    W_s <- W[, active_index, drop = FALSE]
 
-    # 4. beta sampling : using u, f, and v
-    u <- rnorm(n = p, mean = 0, sd = sqrt(1/diagonal))
-    f <- rnorm(n = N, mean = 0, sd = 1)
-    v <- W %*% u + f
-    U <- diagonal_delta * t(W)
-
-    if (S < N) {
-
-      zv <- z / sqrt(sigma) - v
-      wzv <- t(W[, active_set_column_index, drop = FALSE]) %*% zv
-      m <- solve(Q_star, wzv)
-      m_star <- zv - W[, active_set_column_index, drop = FALSE] %*% m
-      new_beta <- sqrt(sigma) * (u + U %*% m_star)
-
-    } else {
-
-      v_star <- solve(M, (z / sqrt(sigma) - v))
-      new_beta <- sqrt(sigma) * (u + U %*% v_star)
-
-    }
-
-    # save the sampled value
-    beta[i, ] <- new_beta
-    local_shrinkage_parameters[i, ] <- eta
-    global_shrinkage_parameter[i] <- xi
-    sigma_parameters[i] <- sigma
-    active_sets[i] <- S
-    meffs[i] <- m_eff
-
-    if(step_check == TRUE)
-      step1_time <- Sys.time()
-
-    # 1. eta sampling
-    eta <- rejection_sampler((beta[i, ]^2)*xi/(2 * sigma), a, b, max_Epsilon)
-
-    # meff 계산 및 threshold 수정
-    if (i %% t == 0) {
-
-      u_i <- runif(1,0,1)
-      p_i <- exp(alpha0 + alpha1 * i)
-
-      if (u_i < p_i)
-        m_eff <- sum(1/((eta*xi)/s2.vec + 1))
-
-    }
-
-    threshold <- sort(eta)[ceiling(m_eff)]
-    active_set_column_index <- which(eta <= threshold)
-    S <- length(active_set_column_index)
-
-    if(step_check == TRUE)
-      step2_time <- Sys.time()
-
-    # 2. xi sampling
+    # 1. xi sampling
     log_xi <- rnorm(1, mean = log(xi), sd = sqrt(s))
     new_xi <- exp(log_xi)
 
     # s < N인 경우 inverse_M 계산
     if (S < N) {
 
-      Q_star <- xi * diag(eta[active_set_column_index], nrow = S) + Q[active_set_column_index, active_set_column_index]
-      new_Q_star <- new_xi * diag(eta[active_set_column_index], nrow = S) + Q[active_set_column_index, active_set_column_index]
+      Q_star <- xi * diag(eta[active_index], nrow = S) + Q_s
+      new_Q_star <- new_xi * diag(eta[active_index], nrow = S) + Q_s
       k <- sqrt(det(solve(new_Q_star, Q_star) * new_xi / xi))
-      wz <- t(W[, active_set_column_index, drop = FALSE]) %*% z
+      wz <- t(W_s) %*% z
       m <- solve(Q_star, wz)
       new_m <- solve(new_Q_star, wz)
       z_square <- t(z) %*% z
-      zmz <- z_square - t(z) %*% W[, active_set_column_index, drop = FALSE] %*% m
-      new_zmz <- z_square - t(z) %*% W[, active_set_column_index, drop = FALSE] %*% new_m
+      zmz <- z_square - t(z) %*% W_s %*% m
+      new_zmz <- z_square - t(z) %*% W_s %*% new_m
 
       acceptance_probability <- probability_a(N, xi, new_xi, k, zmz, new_zmz, w)
       u <- runif(n = 1, min = 0, max = 1)
@@ -138,8 +76,8 @@ sampling_modified_edit <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
     } else {
 
       # M matrix
-      dw <- (1/eta[active_set_column_index]) * t(W[, active_set_column_index, drop = FALSE])
-      WDW <- W[, active_set_column_index, drop = FALSE] %*% dw
+      dw <- (1/eta[active_index]) * t(W_s)
+      WDW <- W_s %*% dw
       M <- diag(N) + WDW/xi
       new_M <- diag(N) + WDW/new_xi
       k <- sqrt(det(solve(new_M, M)))
@@ -162,12 +100,70 @@ sampling_modified_edit <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
     }
 
     if(step_check == TRUE)
-      step3_time <- Sys.time()
+      step1_time <- Sys.time()
 
-    # 3. sigma sampling
+    # 2. sigma sampling
     sigma <- rinvgamma(1,
                        shape = (w+N)/2,
                        rate = (w + zmz)/2)
+
+    if(step_check == TRUE)
+      step2_time <- Sys.time()
+
+    # 3. beta sampling : using u, f, and v
+    diagonal <- eta * xi
+    diagonal_delta <- 1/diagonal
+    diagonal_delta[-active_index] <- 0
+
+    u <- rnorm(n = p, mean = 0, sd = sqrt(1/diagonal))
+    f <- rnorm(n = N, mean = 0, sd = 1)
+    v <- W %*% u + f
+    U <- diagonal_delta * t(W)
+
+    if (S < N) {
+
+      zv <- z / sqrt(sigma) - v
+      wzv <- t(W_s) %*% zv
+      m <- solve(Q_star, wzv)
+      m_star <- zv - W_s %*% m
+      new_beta <- sqrt(sigma) * (u + U %*% m_star)
+
+    } else {
+
+      v_star <- solve(M, (z / sqrt(sigma) - v))
+      new_beta <- sqrt(sigma) * (u + U %*% v_star)
+
+    }
+
+    # save the sampled value
+    beta[i, ] <- new_beta
+    local_shrinkage_parameters[i, ] <- eta
+    global_shrinkage_parameter[i] <- xi
+    sigma_parameters[i] <- sigma
+    active_sets[i] <- S
+    meffs[i] <- m_eff
+
+    if(step_check == TRUE)
+      step3_time <- Sys.time()
+
+    # 4. eta sampling
+    eta <- rejection_sampler((beta[i, ]^2)*xi/(2 * sigma), a, b)
+    eta <- ifelse(eta <= .Machine$double.eps, .Machine$double.eps, eta)
+
+    # m_eff update
+    if (i %% t == 0) {
+
+      u_i <- runif(1,0,1)
+      p_i <- exp(alpha0 + alpha1 * i)
+
+      if (u_i < p_i)
+        m_eff <- sum(1/((eta*xi)/s2.vec + 1))
+
+    }
+
+    threshold <- sort(eta)[ceiling(m_eff)]
+    active_index <- which(eta <= threshold)
+    S <- length(active_index)
 
     if(step_check == TRUE)
       step4_time <- Sys.time()
@@ -198,17 +194,17 @@ sampling_modified_edit <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
   # return
   if(step_check == TRUE){
 
-    return(list(beta = beta[-1, ],
+    return(list(beta = beta,
                 local_shrinkage_parameter = local_shrinkage_parameters,
                 global_shrinkage_parameter = global_shrinkage_parameter,
                 sigma2 = sigma_parameters,
                 active_set = active_sets,
                 meff = meffs,
-                spand_time = step_checks))
+                spend_time = step_checks))
 
   } else {
 
-    return(list(beta = beta[-1, ],
+    return(list(beta = beta,
                 local_shrinkage_parameter = local_shrinkage_parameters,
                 global_shrinkage_parameter = global_shrinkage_parameter,
                 sigma2 = sigma_parameters,

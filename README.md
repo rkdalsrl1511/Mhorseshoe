@@ -4,68 +4,20 @@
 
 
 ```r
-# 시뮬레이션 데이터 생성
-N <- 200
-p <- 1000
-W <- Mhorseshoe::make_W(N = N, p = p)
 
-############################ make_response function #############################
-# non_zero : nonzero parameter의 수 설정                                        
-# SD : linear regression model에서 error term의 표준편차                        
-# fixed_coefficients : NULL인 경우, -100~100사이의 값 랜덤 할당. 숫자를 입력하면
-# 해당 숫자를 nonzero coefficients에 할당. vector form도 가능.                  
-# c(1,2,3,4,5,6,7,8,9,10)으로 입력할 경우 각각 1,2,3,4,5,6,7,8,9,10으로 설정 됨 
-# 결과는 list 형태를 반환                                                       
-#################################################################################
-
-response_list <- Mhorseshoe::make_response(standardized_W,
-                                           non_zero = 10, 
-                                           SD = 1, 
-                                           fixed_coefficients = 5)
-
-# response variable
-z <- response_list[[1]]
-
-# true signal의 index
-non_zero_index <- response_list[[2]]
-
-# true signal의 coefficients
-non_zero_coefficents <- response_list[[3]]
-
-# default 설정으로 approximate 알고리즘 데이터에 적합
-fit_amcmc <- Mhorseshoe::approximate_algorithm(standardized_W, z,
-                                               iteration = 10000)
-
-# default 설정으로 수정한 알고리즘 데이터에 적합
-fit_Mamcmc <- Mhorseshoe::modified_approximate_algorithm(standardized_W, z,
-                                                         iteration = 10000)
 ```
 
 ## 업데이트
 
-### 11/09
+### 06/13
 
-- modified algorithm 수정
-- meff 계산법 수정, xi값 수정
-
-### 11/10
-
-- modified algorithm 코드 수정 : threshold값 설정할 필요 없도록 수정
-- truncate rejection sampler 만들었다가 효과가 없음을 확인
-
-### 12/05
-
-- rejection sampler 수정(Epsilon 값에 따른 eta, xi값 변동 확인)
-
-### 03/26
-
-- rejection sampler 반복문 부분 수정
+- rejection sampler 수정
+- sampling_modified_edit.R 수정
 
 ## 해야 할 것
 
-- foreach 반복문을 통해 rejection sampler의 재귀함수 부분 수정하기
-- eta와 xi 관계 다시 한 번 확인하기
-
+- approximate MCMC tau -> sigma -> beta -> eta 순으로
+- M > 1 인 경우 eta 샘플링 도입해보기
 
 ## git 동기화 관련
 

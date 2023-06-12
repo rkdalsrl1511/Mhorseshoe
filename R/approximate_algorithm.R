@@ -16,14 +16,13 @@
 #' @importFrom invgamma rinvgamma
 #' @export
 approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
-                                  s = 1, xi = 1, sigma = 1, w = 1,
-                                  max_Epsilon = 10^(8), tolerance=1e-20,
+                                  s = 1, xi = 1, sigma = 1, w = 1, tolerance=1e-20,
                                   step_check = FALSE) {
 
   # data size
   N <- nrow(W)
   p <- ncol(W)
-  max_xi <- max(xi, 1)
+  max_xi <- 1
 
   # threshold
   if (p >= N) {
@@ -109,7 +108,7 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
         max_xi <- max(xi, new_xi)
 
         # new_xi
-        new_Q_star <- new_xi * diag(eta[active_set_column_index], nrow = S) + Q
+        new_Q_star <- new_xi * diag(eta[active_set_column_index], nrow = S) + Q[active_set_column_index, active_set_column_index, drop = FALSE]
         new_m <- solve(new_Q_star, wz, tol=tolerance)
         new_zmz <- z_square - t(z) %*% W_s %*% new_m
 

@@ -14,7 +14,6 @@ approximate_algorithm(
   xi = 1,
   sigma = 1,
   w = 1,
-  max_Epsilon = 10^(8),
   tolerance = 1e-20,
   step_check = FALSE
 )
