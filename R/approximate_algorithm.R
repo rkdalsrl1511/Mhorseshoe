@@ -1,6 +1,6 @@
 #' Run approximate algorithm
 #' @title Approximate algorithm
-#' @param W predictor matrix
+#' @param W design matrix
 #' @param z response variance
 #' @param iteration Number of iterations
 #' @param a,b rejection sampler parameter
@@ -15,61 +15,35 @@
 #' @importFrom MASS mvrnorm
 #' @importFrom invgamma rinvgamma
 #' @export
-approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
-                                  s = 1, xi = 1, sigma = 1, w = 1, tolerance=1e-20,
-                                  step_check = FALSE) {
+approximate_horseshoe <- function(W, z, iteration = 1000, a = 1/5, b = 10,
+                                  s = 1, xi = 1, sigma = 1, w = 1,
+                                  tolerance=1e-20, step_check = FALSE) {
 
   # data size
   N <- nrow(W)
   p <- ncol(W)
-  max_xi <- 1
 
   # threshold
-  if (p >= N) {
-
+  if (p >= N)
     threshold <- p
-
-  }else {
-
+  else
     threshold <- sqrt(N*p)
 
-  }
-
-  # parameters
+  # initial values
+  eta <- rep(1, p)
   Q <- t(W) %*% W
-  beta <- matrix(0, nrow = iteration+1, ncol = p)
-  global_shrinkage_parameters <- rep(0, iteration)
+
+  # outputs
+  beta <- matrix(0, nrow = iteration, ncol = p)
   local_shrinkage_parameters <- matrix(0, nrow = iteration, ncol = p)
+  global_shrinkage_parameter <- rep(0, iteration)
   sigma_parameters <- rep(0, iteration)
-
-  # 임시 테스트용 -------------------------------------------------------------
-  l0 <- rep(0, p)
-  l1 <- rep(1, N)
-  l2 <- rep(1, p)
-
-  if (p > N) {
-    lambda_star <- sqrt(1/xi) * 1
-    U <- as.numeric(lambda_star^2) * t(W)
-    u <- stats::rnorm(l2, l0, lambda_star)
-    v <- W %*% u + stats::rnorm(N)
-    v_star <- solve((W %*% U + diag(N)), ((z/sqrt(sigma)) - v))
-    beta[1, ] <- sqrt(sigma) * (u + U %*% v_star)
-  }
-  else {
-    lambda_star <- sqrt(1/xi) * 1
-    L <- chol((1/sigma) * (Q + diag(1/as.numeric(lambda_star^2), p, p)))
-    v <- solve(t(L), t(t(z) %*% W)/sigma)
-    mu <- solve(L, v)
-    u <- solve(L, stats::rnorm(p))
-    beta[1, ] <- mu + u
-  }
-  # 임시 테스트용 -------------------------------------------------------------
 
   if (step_check == TRUE) {
 
-    step_checks <- data.frame(matrix(rep(0, 5), nrow = 1))
+    step_checks <- data.frame(matrix(rep(0, 6), nrow = 1))
     colnames(step_checks) <- c("total_active_column",
-                               "step1", "step2", "step3", "total_time")
+                               "step1", "step2", "step3", "step4", "total_time")
 
   }
 
@@ -79,47 +53,35 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
     if(step_check == TRUE)
       iteration_start_time <- Sys.time()
 
-    # 1. eta sampling
-    eta <- rejection_sampler((beta[i, ]^2)*xi/(2 * sigma), a, b)
+    # 1. xi sampling
+    log_xi <- rnorm(1, mean = log(xi), sd = sqrt(s))
+    new_xi <- exp(log_xi)
+    max_xi <- max(xi, new_xi)
 
     # active W matrix
-    active_set_column_index <- which((eta * max_xi < threshold))
-    S <- length(active_set_column_index)
-    W_s <- W[, active_set_column_index, drop = FALSE]
+    active_index <- which((eta * max_xi < threshold))
+    S <- length(active_index)
+    Q_s <- Q[active_index, active_index, drop = FALSE]
+    W_s <- W[, active_index, drop = FALSE]
 
-    # step1 끝낸 시간
-    if(step_check == TRUE)
-      step1_time <- Sys.time()
-
-    # s < N인 경우 inverse_M 계산
+    # s < N case
     if (S < N) {
+
       wz <- t(W_s) %*% z
       z_square <- t(z) %*% z
-
-      Q_star <- xi * diag(eta[active_set_column_index], nrow = S) + Q[active_set_column_index, active_set_column_index, drop = FALSE]
+      Q_star <- xi * diag(eta[active_index], nrow = S) + Q_s
       m <- solve(Q_star, wz, tol=tolerance)
       zmz <- z_square - t(z) %*% W_s %*% m
 
-      # 2. xi sampling
       if (s != 0) {
 
-        log_xi <- rnorm(1, mean = log(xi), sd = sqrt(s))
-        new_xi <- exp(log_xi)
-        max_xi <- max(xi, new_xi)
-
-        # new_xi
-        new_Q_star <- new_xi * diag(eta[active_set_column_index], nrow = S) + Q[active_set_column_index, active_set_column_index, drop = FALSE]
+        new_Q_star <- new_xi * diag(eta[active_index], nrow = S) + Q_s
         new_m <- solve(new_Q_star, wz, tol=tolerance)
         new_zmz <- z_square - t(z) %*% W_s %*% new_m
-
-        # acceptance probability's k
+        # new xi accept/reject process
         k <- sqrt(det(solve(new_Q_star, Q_star, tol=tolerance) * new_xi / xi))
-
-        # acceptance probability
         acceptance_probability <- probability_a(N, xi, new_xi, k, zmz, new_zmz, w)
         u <- runif(n = 1, min = 0, max = 1)
-
-        # new xi accept/reject process
         if (u < acceptance_probability) {
 
           xi <- new_xi
@@ -133,29 +95,21 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
       # s >= N인 경우 inverse_M 계산
     } else {
 
-      dw <- (1/eta[active_set_column_index]) * t(W_s)
+      dw <- (1/eta[active_index]) * t(W_s)
       WDW <- W_s %*% dw
       M <- diag(N) + WDW/xi
       m <- solve(M, z, tol=tolerance)
       zmz <- t(z) %*% m
 
-      # 2. xi sampling
       if(s != 0) {
-
-        log_xi <- rnorm(1, mean = log(xi), sd = sqrt(s))
-        new_xi <- exp(log_xi)
-        max_xi <- max(xi, new_xi)
 
         new_M <- diag(N) + WDW/new_xi
         new_m <- solve(new_M, z, tol=tolerance)
         new_zmz <- t(z) %*% new_m
-
+        # new xi accept/reject process
         k <- sqrt(det(solve(new_M, M, tol=tolerance)))
-
         acceptance_probability <- probability_a(N, xi, new_xi, k, zmz, new_zmz, w)
         u <- runif(n = 1, min = 0, max = 1)
-
-        # new xi accept/reject process
         if (u < acceptance_probability) {
 
           xi <- new_xi
@@ -168,20 +122,23 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
 
     }
 
+    # step1 끝낸 시간
     if(step_check == TRUE)
-      step2_time <- Sys.time()
+      step1_time <- Sys.time()
 
-    # 3. sigma sampling
+    # 2. sigma sampling
     sigma <- rinvgamma(1,
                        shape = (w+N)/2,
                        rate = (w + zmz)/2)
 
-    # D matrix
+    if(step_check == TRUE)
+      step2_time <- Sys.time()
+
+    # 3. beta sampling : using u, f, and v
     diagonal <- eta * xi
     diagonal_delta <- 1/diagonal
-    diagonal_delta[-active_set_column_index] <- 0
+    diagonal_delta[-active_index] <- 0
 
-    # 4. beta sampling : using u, f, and v
     u <- rnorm(n = p, mean = 0, sd = sqrt(1/diagonal))
     f <- rnorm(n = N, mean = 0, sd = 1)
     v <- W %*% u + f
@@ -202,32 +159,40 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
 
     }
 
+    # save the sampled value
+    beta[i, ] <- new_beta
+    local_shrinkage_parameters[i, ] <- eta
+    global_shrinkage_parameter[i] <- xi
+    sigma_parameters[i] <- sigma
+
     if(step_check == TRUE)
       step3_time <- Sys.time()
 
-    # save the sampled value
-    beta[i+1, ] <- new_beta
-    local_shrinkage_parameters[i, ] <- eta
-    global_shrinkage_parameters[i] <- xi
-    sigma_parameters[i] <- sigma
+    # 4. eta sampling
+    eta <- rejection_sampler((beta[i, ]^2)*xi/(2 * sigma), a, b)
+    eta <- ifelse(eta <= .Machine$double.eps, .Machine$double.eps, eta)
+
+    if(step_check == TRUE)
+      step4_time <- Sys.time()
 
     if ((i %% 50) == 0) {
 
       cat("iteration : ", i,
-          "active : ", length(active_set_column_index),
+          "active : ", length(active_index),
           "global : ", xi, "\n")
 
     }
 
     if (step_check == TRUE) {
 
-      S <- length(active_set_column_index)
+      S <- length(active_index)
       step1 <- step1_time - iteration_start_time
       step2 <- step2_time - step1_time
       step3 <- step3_time - step2_time
-      total <- step3_time - iteration_start_time
+      step4 <- step4_time - step3_time
+      total <- step4_time - iteration_start_time
 
-      step_checks[i, ] <- c(S, step1, step2, step3, total)
+      step_checks[i, ] <- c(S, step1, step2, step3, step4, total)
 
     }
 
@@ -236,16 +201,16 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
   # return
   if(step_check == TRUE) {
 
-    return(list(beta = beta[-1, ],
-                global_shrinkage_parameter = global_shrinkage_parameters,
+    return(list(beta = beta,
+                global_shrinkage_parameter = global_shrinkage_parameter,
                 local_shrinkage_parameter = local_shrinkage_parameters,
                 sigma_parameter = sigma_parameters,
                 spend_time = step_checks))
 
   } else {
 
-    return(list(beta = beta[-1, ],
-                global_shrinkage_parameter = global_shrinkage_parameters,
+    return(list(beta = beta,
+                global_shrinkage_parameter = global_shrinkage_parameter,
                 local_shrinkage_parameter = local_shrinkage_parameters,
                 sigma_parameter = sigma_parameters))
 

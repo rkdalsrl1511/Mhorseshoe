@@ -23,7 +23,6 @@ rejection_sampler <- function(Epsilon, a, b){
   small_eps_idx <- which(Epsilon <= 1)
   eta <- sample_small_eps_eta(eta, small_eps_idx, prob_v, Epsilon, lambda2, lambda3, a, b)
 
-  # return
   return(eta)
 
 }

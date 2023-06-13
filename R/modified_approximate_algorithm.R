@@ -1,10 +1,10 @@
 # Run modified approximate algorithm with dependence prior
 #' @importFrom invgamma rinvgamma
 #' @export
-sampling_modified_edit <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
-                                   a = 1/5, b = 10, s = 0.8, w = 1,
-                                   t = 10, alpha0 = 0, alpha1 = -9*10^(-4),
-                                   step_check = FALSE) {
+modified_horseshoe <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
+                               a = 1/5, b = 10, s = 0.8, w = 1,
+                               t = 10, alpha0 = 0, alpha1 = -4.5*10^(-4),
+                               step_check = FALSE) {
 
   # data size
   N <- nrow(W)
@@ -18,7 +18,7 @@ sampling_modified_edit <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
   Q <- t(W) %*% W
   s2.vec <- diag(Q)
 
-  # parameters
+  # outputs
   beta <- matrix(0, nrow = iteration, ncol = p)
   local_shrinkage_parameters <- matrix(0, nrow = iteration, ncol = p)
   global_shrinkage_parameter <- rep(0, iteration)
@@ -34,7 +34,7 @@ sampling_modified_edit <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
 
   }
 
-  # sampling start
+  # Gibbs sampling start
   for(i in 1:iteration) {
 
     if (step_check == TRUE)
@@ -47,56 +47,62 @@ sampling_modified_edit <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
     log_xi <- rnorm(1, mean = log(xi), sd = sqrt(s))
     new_xi <- exp(log_xi)
 
-    # s < N인 경우 inverse_M 계산
+    # s < N case
     if (S < N) {
 
-      Q_star <- xi * diag(eta[active_index], nrow = S) + Q_s
-      new_Q_star <- new_xi * diag(eta[active_index], nrow = S) + Q_s
-      k <- sqrt(det(solve(new_Q_star, Q_star) * new_xi / xi))
       wz <- t(W_s) %*% z
-      m <- solve(Q_star, wz)
-      new_m <- solve(new_Q_star, wz)
       z_square <- t(z) %*% z
+      Q_star <- xi * diag(eta[active_index], nrow = S) + Q_s
+      m <- solve(Q_star, wz)
       zmz <- z_square - t(z) %*% W_s %*% m
-      new_zmz <- z_square - t(z) %*% W_s %*% new_m
 
-      acceptance_probability <- probability_a(N, xi, new_xi, k, zmz, new_zmz, w)
-      u <- runif(n = 1, min = 0, max = 1)
+      if (s != 0) {
 
-      # new xi accept/reject process
-      if (u < acceptance_probability) {
+        new_Q_star <- new_xi * diag(eta[active_index], nrow = S) + Q_s
+        new_m <- solve(new_Q_star, wz)
+        new_zmz <- z_square - t(z) %*% W_s %*% new_m
+        # new xi accept/reject process
+        k <- sqrt(det(solve(new_Q_star, Q_star) * new_xi / xi))
+        acceptance_probability <- probability_a(N, xi, new_xi, k, zmz, new_zmz, w)
+        u <- runif(n = 1, min = 0, max = 1)
+        if (u < acceptance_probability) {
 
-        xi <- new_xi
-        zmz <- new_zmz
-        Q_star <- new_Q_star
+          xi <- new_xi
+          zmz <- new_zmz
+          Q_star <- new_Q_star
+
+        }
 
       }
 
-      # s >= N인 경우 inverse_M 계산
+      # s >= N case
     } else {
 
-      # M matrix
       dw <- (1/eta[active_index]) * t(W_s)
       WDW <- W_s %*% dw
       M <- diag(N) + WDW/xi
-      new_M <- diag(N) + WDW/new_xi
-      k <- sqrt(det(solve(new_M, M)))
       m <- solve(M, z)
-      new_m <- solve(new_M, z)
       zmz <- t(z) %*% m
-      new_zmz <- t(z) %*% new_m
 
-      acceptance_probability <- probability_a(N, xi, new_xi, k, zmz, new_zmz, w)
-      u <- runif(n = 1, min = 0, max = 1)
+      if (s != 0) {
 
-      # new xi accept/reject process
-      if (u < acceptance_probability) {
+        new_M <- diag(N) + WDW/new_xi
+        new_m <- solve(new_M, z)
+        new_zmz <- t(z) %*% new_m
+        # new xi accept/reject process
+        k <- sqrt(det(solve(new_M, M)))
+        acceptance_probability <- probability_a(N, xi, new_xi, k, zmz, new_zmz, w)
+        u <- runif(n = 1, min = 0, max = 1)
+        if (u < acceptance_probability) {
 
-        xi <- new_xi
-        zmz <- new_zmz
-        M <- new_M
+          xi <- new_xi
+          zmz <- new_zmz
+          M <- new_M
+
+        }
 
       }
+
     }
 
     if(step_check == TRUE)
