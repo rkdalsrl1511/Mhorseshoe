@@ -80,7 +80,7 @@ approximate_algorithm <- function(W, z, iteration = 1000, a = 1/5, b = 10,
       iteration_start_time <- Sys.time()
 
     # 1. eta sampling
-    eta <- rejection_sampler((beta[i, ]^2)*xi/(2 * sigma), a, b, max_Epsilon = max_Epsilon)
+    eta <- rejection_sampler((beta[i, ]^2)*xi/(2 * sigma), a, b)
 
     # active W matrix
     active_set_column_index <- which((eta * max_xi < threshold))

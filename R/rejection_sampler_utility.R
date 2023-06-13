@@ -58,10 +58,9 @@ sample_z <- function(selected_interval, Epsilon,
 
 }
 
-sample_eta <- function(p, prob_v, Epsilon, lambda2, lambda3, a, b) {
+sample_small_eps_eta <- function(eta, idx, prob_v, Epsilon, lambda2, lambda3, a, b) {
 
-  eta <- rep(1, p)
-  idx <- 1:p
+  p <- length(idx)
 
   while(p != 0){
 
@@ -84,6 +83,25 @@ sample_eta <- function(p, prob_v, Epsilon, lambda2, lambda3, a, b) {
     # acceptance / rejection
     u <- runif(p, min = 0, max = 1)
     eta[idx] <- ifelse(u < exp(-(f- f_l)), z, -1)
+    idx <- which(eta == -1)
+    p <- length(idx)
+
+  }
+
+  return(eta)
+
+}
+
+sample_large_eps_eta <- function(eta, idx, prob_v, Epsilon, lambda2, lambda3, a, b) {
+
+  p <- length(idx)
+
+  while(p != 0){
+
+    v <- runif(p, min = 0, max = 1)
+    z <- - log(1-v) / Epsilon[idx]
+    u <- runif(p, min = 0, max = 1)
+    eta[idx] <- ifelse(u < 1/(1+z), z, -1)
     idx <- which(eta == -1)
     p <- length(idx)
 
