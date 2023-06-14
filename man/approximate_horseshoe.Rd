@@ -10,7 +10,7 @@ approximate_horseshoe(
   iteration = 1000,
   a = 1/5,
   b = 10,
-  s = 1,
+  s = 0.8,
   xi = 1,
   sigma = 1,
   w = 1,

@@ -16,7 +16,7 @@
 #' @importFrom invgamma rinvgamma
 #' @export
 approximate_horseshoe <- function(W, z, iteration = 1000, a = 1/5, b = 10,
-                                  s = 1, xi = 1, sigma = 1, w = 1,
+                                  s = 0.8, xi = 1, sigma = 1, w = 1,
                                   tolerance=1e-20, step_check = FALSE) {
 
   # data size
