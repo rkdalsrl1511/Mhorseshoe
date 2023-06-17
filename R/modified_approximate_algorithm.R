@@ -44,7 +44,7 @@ modified_horseshoe <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
     W_s <- W[, active_index, drop = FALSE]
 
     # 1. xi sampling
-    log_xi <- rnorm(1, mean = log(xi), sd = sqrt(s))
+    log_xi <- rnorm(1, mean = log(xi), sd = s)
     new_xi <- exp(log_xi)
 
     # s < N case

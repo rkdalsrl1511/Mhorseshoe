@@ -17,7 +17,7 @@ rejection_sampler <- function(Epsilon, a, b){
 
   # sampling large epsilon eta(ordinary rejection sampler)
   large_eps_idx <- which(Epsilon > 1)
-  eta <- sample_large_eps_eta(eta, large_eps_idx, prob_v, Epsilon, lambda2, lambda3, a, b)
+  eta <- sample_large_eps_eta(eta, large_eps_idx, prob_v, Epsilon)
 
   # sampling small epsilon eta(Johndraw's rejection sampler)
   small_eps_idx <- which(Epsilon <= 1)

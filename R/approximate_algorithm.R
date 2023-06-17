@@ -54,7 +54,7 @@ approximate_horseshoe <- function(W, z, iteration = 1000, a = 1/5, b = 10,
       iteration_start_time <- Sys.time()
 
     # 1. xi sampling
-    log_xi <- rnorm(1, mean = log(xi), sd = sqrt(s))
+    log_xi <- rnorm(1, mean = log(xi), sd = s)
     new_xi <- exp(log_xi)
     max_xi <- max(xi, new_xi)
 

@@ -92,7 +92,7 @@ sample_small_eps_eta <- function(eta, idx, prob_v, Epsilon, lambda2, lambda3, a,
 
 }
 
-sample_large_eps_eta <- function(eta, idx, prob_v, Epsilon, lambda2, lambda3, a, b) {
+sample_large_eps_eta <- function(eta, idx, prob_v, Epsilon) {
 
   p <- length(idx)
 
