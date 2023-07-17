@@ -70,16 +70,16 @@ approximate_horseshoe <- function(W, z, iteration = 1000, a = 1/5, b = 10,
       wz <- t(W_s) %*% z
       z_square <- t(z) %*% z
       Q_star <- xi * diag(eta[active_index], nrow = S) + Q_s
-      m <- solve(Q_star, wz, tol=tolerance)
+      m <- solve(Q_star, wz)
       zmz <- z_square - t(z) %*% W_s %*% m
 
       if (s != 0) {
 
         new_Q_star <- new_xi * diag(eta[active_index], nrow = S) + Q_s
-        new_m <- solve(new_Q_star, wz, tol=tolerance)
+        new_m <- solve(new_Q_star, wz)
         new_zmz <- z_square - t(z) %*% W_s %*% new_m
         # new xi accept/reject process
-        k <- sqrt(det(solve(new_Q_star, Q_star, tol=tolerance) * new_xi / xi))
+        k <- sqrt(prod(diag(chol(Q_star))^2 / diag(chol(new_Q_star))^2  * new_xi / xi))
         acceptance_probability <- probability_a(N, xi, new_xi, k, zmz, new_zmz, w)
         u <- runif(n = 1, min = 0, max = 1)
         if (u < acceptance_probability) {
@@ -98,16 +98,16 @@ approximate_horseshoe <- function(W, z, iteration = 1000, a = 1/5, b = 10,
       dw <- (1/eta[active_index]) * t(W_s)
       WDW <- W_s %*% dw
       M <- diag(N) + WDW/xi
-      m <- solve(M, z, tol=tolerance)
+      m <- solve(M, z)
       zmz <- t(z) %*% m
 
       if(s != 0) {
 
         new_M <- diag(N) + WDW/new_xi
-        new_m <- solve(new_M, z, tol=tolerance)
+        new_m <- solve(new_M, z)
         new_zmz <- t(z) %*% new_m
         # new xi accept/reject process
-        k <- sqrt(det(solve(new_M, M, tol=tolerance)))
+        k <- sqrt(prod(diag(chol(M))^2 / diag(chol(new_M))^2))
         acceptance_probability <- probability_a(N, xi, new_xi, k, zmz, new_zmz, w)
         u <- runif(n = 1, min = 0, max = 1)
         if (u < acceptance_probability) {
