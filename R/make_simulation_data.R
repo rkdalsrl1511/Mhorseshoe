@@ -4,7 +4,7 @@
 #' @param W W matrix
 #' @param non_zero Number of non_zero signals
 #' @export
-make_simulation_data <- function(N = 500, p = 5000, Johndraw = FALSE,
+make_simulation_data <- function(N = 500, p = 5000, Johndraw = FALSE, Johndraw_type = 1,
                                  W_mean = 0, W_sd = 1, W_scaling = NULL,
                                  non_zero = 30, error_sd = 1, fixed_coefficients = NULL) {
 
@@ -42,12 +42,35 @@ make_simulation_data <- function(N = 500, p = 5000, Johndraw = FALSE,
 
   if (Johndraw == TRUE) {
 
-    # non_zero column을 랜덤으로 할당
-    non_zero_index <- 1:23
-    non_zero_coefficients <- vector(mode = "numeric", length = 23)
+    if(Johndraw_type == 2) {
 
-    for (i in 1:length(non_zero_coefficients))
-      non_zero_coefficients[i] <- 2^(9/4 - i/4)
+      non_zero_index <- 1:45
+      non_zero_coefficients <- vector(mode = "numeric", length = 45)
+      for (i in 1:length(non_zero_coefficients))
+        non_zero_coefficients[i] <- 2^(29/14 - i/14)
+
+    } else if(Johndraw_type == 3) {
+
+      non_zero_index <- 1:75
+      non_zero_coefficients <- vector(mode = "numeric", length = 75)
+      for (i in 1:length(non_zero_coefficients))
+        non_zero_coefficients[i] <- 2^(49/24 - i/24)
+
+    } else if(Johndraw_type == 4) {
+
+      non_zero_index <- 1:150
+      non_zero_coefficients <- vector(mode = "numeric", length = 150)
+      for (i in 1:length(non_zero_coefficients))
+        non_zero_coefficients[i] <- 2^(99/49 - i/49)
+
+    } else {
+
+      non_zero_index <- 1:23
+      non_zero_coefficients <- vector(mode = "numeric", length = 23)
+      for (i in 1:length(non_zero_coefficients))
+        non_zero_coefficients[i] <- 2^(9/4 - i/4)
+
+    }
 
     # z : response variable
     z <- vector(mode = "numeric", length = nrow(W))

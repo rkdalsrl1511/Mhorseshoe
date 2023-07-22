@@ -101,7 +101,7 @@ approximate_horseshoe <- function(W, z, iteration = 1000, a = 1/5, b = 10,
       m <- solve(M, z)
       zmz <- t(z) %*% m
 
-      if(s != 0) {
+      if (s != 0) {
 
         new_M <- diag(N) + WDW/new_xi
         new_m <- solve(new_M, z)
