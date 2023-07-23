@@ -15,9 +15,9 @@
 #' @importFrom MASS mvrnorm
 #' @importFrom invgamma rinvgamma
 #' @export
-approximate_horseshoe <- function(W, z, iteration = 1000, a = 1/5, b = 10,
+approximate_horseshoe <- function(W, z, iteration = 5000, a = 1/5, b = 10,
                                   s = 0.8, xi = 1, sigma = 1, w = 1,
-                                  tolerance=1e-20, step_check = FALSE) {
+                                  step_check = FALSE) {
 
   # data size
   N <- nrow(W)
@@ -148,13 +148,13 @@ approximate_horseshoe <- function(W, z, iteration = 1000, a = 1/5, b = 10,
 
       zv <- z / sqrt(sigma) - v
       wzv <- t(W_s) %*% zv
-      m <- solve(Q_star, wzv, tol=tolerance)
+      m <- solve(Q_star, wzv)
       m_star <- zv - W_s %*% m
       new_beta <- sqrt(sigma) * (u + U %*% m_star)
 
     } else {
 
-      v_star <- solve(M, (z / sqrt(sigma) - v), tol=tolerance)
+      v_star <- solve(M, (z / sqrt(sigma) - v))
       new_beta <- sqrt(sigma) * (u + U %*% v_star)
 
     }

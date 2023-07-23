@@ -1,8 +1,8 @@
 # Run modified approximate algorithm with dependence prior
 #' @importFrom invgamma rinvgamma
 #' @export
-modified_horseshoe <- function(W, z, xi = 1, sigma = 1, iteration = 5000,
-                               a = 1/5, b = 10, s = 0.8, w = 1,
+modified_horseshoe <- function(W, z, iteration = 5000,
+                               a = 1/5, b = 10, s = 0.8, xi = 1, sigma = 1, w = 1,
                                t = 10, alpha0 = 0, alpha1 = -4.5*10^(-4),
                                step_check = FALSE) {
 
