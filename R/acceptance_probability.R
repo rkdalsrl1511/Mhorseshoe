@@ -16,3 +16,11 @@ probability_a <- function(N, xi, new_xi, k, zmz, new_zmz, w){
 
 
 }
+
+lmh_latio <- function(N, xi, cM, zmz, w){
+
+  a <- -sum(log(cM))/2 - ((N+w)/2)*log(w+zmz) - log(sqrt(xi)*(1+xi))
+
+  return(a)
+
+}

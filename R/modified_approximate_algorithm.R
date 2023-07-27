@@ -62,8 +62,11 @@ modified_horseshoe <- function(W, z, iteration = 5000,
         new_m <- solve(new_Q_star, wz)
         new_zmz <- z_square - t(z) %*% W_s %*% new_m
         # new xi accept/reject process
-        k <- sqrt(prod(diag(chol(Q_star))^2 / diag(chol(new_Q_star))^2  * new_xi / xi))
-        acceptance_probability <- probability_a(N, xi, new_xi, k, zmz, new_zmz, w)
+        cM <- (diag(chol(Q_star))^2)/xi
+        new_cM <- (diag(chol(new_Q_star))^2)/new_xi
+        curr_ratio <- lmh_latio(N, xi, cM, zmz, w)
+        new_ratio <- lmh_latio(N, new_xi, new_cM, new_zmz, w)
+        acceptance_probability <- exp(new_ratio - curr_ratio + log(new_xi) - log(xi))
         u <- runif(n = 1, min = 0, max = 1)
         if (u < acceptance_probability) {
 
@@ -90,8 +93,11 @@ modified_horseshoe <- function(W, z, iteration = 5000,
         new_m <- solve(new_M, z)
         new_zmz <- t(z) %*% new_m
         # new xi accept/reject process
-        k <- sqrt(prod(diag(chol(M))^2 / diag(chol(new_M))^2))
-        acceptance_probability <- probability_a(N, xi, new_xi, k, zmz, new_zmz, w)
+        cM <- diag(chol(M))^2
+        new_cM <- diag(chol(new_M))^2
+        curr_ratio <- lmh_latio(N, xi, cM, zmz, w)
+        new_ratio <- lmh_latio(N, new_xi, new_cM, new_zmz, w)
+        acceptance_probability <- exp(new_ratio - curr_ratio + log(new_xi) - log(xi))
         u <- runif(n = 1, min = 0, max = 1)
         if (u < acceptance_probability) {
 
