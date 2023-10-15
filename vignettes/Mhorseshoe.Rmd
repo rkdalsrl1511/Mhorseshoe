@@ -1,0 +1,326 @@
+---
+title: "Mhorseshoe"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Mhorseshoe}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+library(Mhorseshoe)
+library(ggplot2)
+library(horseshoe)
+```
+
+In this vignette, the functions exact_horseshoe, approx_horseshoe, and 
+mapprox_horseshoe are explained in the following sections.
+
+1. About the horseshoe estimator in this package
+2. Brief Description of approximate MCMC algorithm
+
+# 1. About the horseshoe estimator in this package
+
+The horseshoe prior is a continuous reduced prior distribution frequently used 
+in high-dimensional Bayesian linear models, and can be effectively applied to 
+sparse data. This is a method that theoretically guarantees excellent shrinkage 
+properties. This package provides an estimator applying the horseshoe prior,The 
+likelihood function of the Gaussian linear model to be considered in this 
+package is as follows:
+
+$$L(y\ |\ x, \beta, \sigma^2) = (\frac{1}{\sqrt{2\pi}\sigma})^{-N/2}exp
+\{ -\frac{1}{2\sigma^2}(y-X\beta)^T(y-X\beta)\},\\ X \in 
+\mathbb{R}^{N \times p},\ y \in \mathbb{R}^{N},\ \beta \in \mathbb{R}^{p}$$
+
+And the form of the hierarchical model applying the horseshoe prior to $\beta$ 
+is expressed as follows:
+
+$$\beta_{j}\ |\ \sigma^{2}, \tau^{2}, \lambda_{j}^{2}
+\overset{i.i.d}{\sim} N\left(0, \sigma^{2}\tau^{2}\lambda_{j}^{2} \right),
+\quad \lambda_{j}\overset{i.i.d}{\sim}C^{+}(0,1),\quad j=1,2,...,p, \\ \tau
+\overset{i.i.d}{\sim}C^{+}(0,1),\quad p(\sigma^2)\propto gamma\left(
+w/2, w/2\right).$$
+
+Where $C^{+}(0,1)$ is a half-Cauchy distribution, 
+$\lambda_{1}, ..., \lambda_{p}$ are local shrinkage parameters, and $\tau$ is 
+global shrinkage parameter. The exact_horseshoe in this package is a horseshoe 
+estimator for the prior defined above, as described in exact MCMC algorithm of 
+Johndrow et al. (2020). The blocked Metropolis-within-Gibb that samples 
+$\eta,\ \left(\tau, \sigma, \beta \right)$ is adopted, and the brief process 
+is as follows.
+
+$$\xi = \tau^{-2},\quad \eta_{j} = \lambda_{j}^{-2},\quad
+j = 1,2,...,p, \\ D = diag\left(\eta_{1}^{-1},..., \eta_{p}^{-1} \right),
+\quad M_{\xi} = I_{N} + \xi^{-1}XDX^{T}, \\ p(\xi | y, X, \eta) \propto
+|M_{\xi}|^{-1/2}\{(w + y^{T}M_{\xi}^{-1}y) / 2 \}^{-(w + N) / 2}/
+\{\sqrt{\xi}(1+\xi)\}.$$
+
+1. Sample \eqn{\lambda_{j}^{-2} = \eta_{j},\ j=1,2,...,p}, using the
+following posterior of \eqn{\eta_{j}} for rejection sampling.
+$$p(\eta_{j} | \xi, \beta_{j}, \sigma^{2}) \propto \frac{1}{1 +
+\eta_{j}}exp\{-\frac{\beta_{j}^{2}\xi \eta_{j}}{2\sigma^{2}} \}.$$
+2. Sample \eqn{\tau^{-2} = \xi} using the proposed MH algorithm as follows.
+$$log(\xi^{\star}) \sim N(log(\xi), s), accept\ \xi \ w.p.\
+\{p(\xi^{\star} | y, X, \eta)\xi^{\star}\}/\{p(\xi | y, X, \eta)\xi \}.$$
+3. Sample $\sigma^{2}$, $$\sigma^{2} | y, X, \eta, \xi \sim
+InvGamma\{(w + N) / 2, (w + y^{T}M_{\xi}^{-1}y) / 2 \}.$$
+4. Sample $\beta$, $$\beta | y, X, \eta, \xi, \sigma \sim
+N\left(\left(X^{T}X + \left(\xi D \right)^{-1}\right)^{-1}X^{T}y,
+\ \sigma^{2}\left(X^{T}X + \left(\xi D \right)^{-1} \right)^{-1} \right).$$
+
+Since the algorithm of this package considers the case of $p >> N$, the 
+computational cost can be lowered by sampling $\beta$ using fast 
+sampling(Bhattacharya et al.,2016) in the step 4.
+
+$$u \sim N_{p}(0, \xi^{-1}D),\quad f \sim N_{N}(0, I_{N}), \\
+v = Xu + f,\quad v^{\star} = M_{\xi}^{-1}(y/\sigma - v), \\
+\beta = \sigma(u + \xi^{-1}DX^{T}v^{\star}).$$
+
+For simulation, the data size was set to N = 500, p = 1000, and the design 
+matrix $X=\{x_{j} \}_{j=1}^{p}$, true value of beta were set as follows.
+
+$$x_{j} \sim N_{N}\left(0, I_{N} \right), \\ y_{i} \sim N(x_{i}\beta, 4), \\ 
+\beta_{j} = \begin{cases} 1, & \mbox{if }\ \mbox{j<51,} \\ 0, & 
+\mbox{otherwise.}\end{cases}$$
+
+As a caution, the data is for testing the application of the algorithm and is 
+not a simulation that strictly considers sparsity condition.
+
+```{r}
+# making simulation data.
+set.seed(123)
+N <- 300
+p <- 500
+p_star <- 50
+true_beta <- c(rep(1, p_star), rep(0, p-p_star))
+
+# design matrix X.
+X <- matrix(1, nrow = N, ncol = p)
+for (i in 1:p) {
+  X[, i] <- stats::rnorm(N, mean = 0, sd = 1)
+}
+  
+# response variable y.
+y <- vector(mode = "numeric", length = N)
+e <- rnorm(N, mean = 0, sd = 2)
+for (i in 1:p_star) {
+  y <- y + true_beta[i] * X[, i]
+}
+y <- y + e
+```
+
+For the corresponding simulation data, the results were compared with the 
+**horseshoe** function of the horseshoe package. We fit the data to the 
+horseshoe and exact_horseshoe functions and plot the results for the first 100 
+indices, including the first 50 indices that are non-zero coefficients.
+
+```{r fig.width = 6, fig.height= 4}
+# horseshoe in horseshoe package.
+horseshoe_result <- horseshoe::horseshoe(y, X, method.tau = "halfCauchy",
+                                         method.sigma = "Jeffreys",
+                                         burn = 1000, nmc = 4000)
+
+# exact_horseshoe.
+exact_horseshoe_result <- exact_horseshoe(X, y, iteration = 5000)
+exact_horseshoe_postmean <- apply(exact_horseshoe_result$BetaSamples[1001:5000, ], 
+                        MARGIN = 2, mean)
+exact_horseshoe_leftCI <- apply(exact_horseshoe_result$BetaSamples[1001:5000, ], 
+                      MARGIN = 2, quantile, probs = 0.025)
+exact_horseshoe_rightCI <- apply(exact_horseshoe_result$BetaSamples[1001:5000, ], 
+                      MARGIN = 2, quantile, probs = 0.975)
+
+df <- data.frame(index = 1:100,
+                 horseshoe_postmean = horseshoe_result$BetaHat[1:100],
+                 horseshoe_leftCI = horseshoe_result$LeftCI[1:100],
+                 horseshoe_rightCI = horseshoe_result$RightCI[1:100],
+                 exact_horseshoe_postmean = exact_horseshoe_postmean[1:100],
+                 exact_horseshoe_leftCI = exact_horseshoe_leftCI[1:100],
+                 exact_horseshoe_rightCI = exact_horseshoe_rightCI[1:100],
+                 true_beta = true_beta[1:100])
+
+# Estimation results of the horseshoe.
+ggplot(data = df, aes(x = index, y = true_beta)) + 
+  geom_point(size = 2) + 
+  geom_point(aes(x = index, y = horseshoe_postmean), size = 2, col = "red") +
+  geom_errorbar(aes(ymin = horseshoe_leftCI, 
+                    ymax = horseshoe_rightCI), width = .1, col = "red") +
+  labs(title = "95% Credible intervals of the horseshoe function", y = "beta")
+
+# Estimation results of the exact_horseshoe.
+ggplot(data = df, aes(x = index, y = true_beta)) + 
+  geom_point(size = 2) + 
+  geom_point(aes(x = index, y = exact_horseshoe_postmean), 
+             size = 2, col = "red") +
+  geom_errorbar(aes(ymin = exact_horseshoe_leftCI, 
+                    ymax = exact_horseshoe_rightCI), width = .1, col = "red") +
+  labs(title = "95% Credible intervals of the exact_horseshoe function",
+       y = "beta")
+```
+
+The results for both functions were similar. Both functions estimate that 95% 
+of the credible intervals for all non-zero indices except 4, 36, 41, and 46 include 1.
+
+# 2. approximate MCMC algorithm
+
+In general, the disadvantage of the horseshoe estimator is that the 
+computational cost is large for high-dimensional data where $p>>N$. To overcome
+these limitations, Johndrow et al. (2020) proposed a scalable approximate
+MCMC algorithm that can reduce computational costs by introducing a thresholding 
+method while applying the horseshoe prior. This algorithm has the following 
+simple changes compared to the exact algorithm in section 1.
+
+$$D_{\delta} = diag\left(\eta_{j}^{-1}1\left(\xi^{-1}\eta_{j}^{-1}
+> \delta,\ j=1,2,...,p. \right) \right),$$
+$$M_{\xi} \approx M_{\xi, \delta} = I_{N} + \xi^{-1}XD_{\delta}X^{T}.$$
+
+The set of columns that satisfies the condition ($\xi^{-1}\eta_{j}^{-1} > \delta$) 
+is defined as the active set, and let's define $S$ as the index set of the following columns.
+
+$$S = \{j\ |\ \xi^{-1}\eta_{j}^{-1} > \delta,\ j=1,2,...,p. \}.$$
+
+If $\xi^{-1}\eta_{j}^{-1}$ is very small, the posterior of $\beta$
+will have a mean and variance close to 0. Therefore, let's set
+$\xi^{-1}\eta_{j}^{-1}$ smaller than $\delta$ to 0 and the size of inverse 
+$M_{\xi, \delta}$ matrix is reduced as follows.
+
+$$length(S)=s_{\delta} \le p, \\ X_{S} \in R^{N \times s_{\delta}},
+\quad D_{S} \in R^{s_{\delta} \times s_{\delta}}, \\ M_{\xi, \delta}^{-1} =
+\left(I_{N} + \xi^{-1}X_{S}D_{S}X_{S}^{T} \right)^{-1}.$$
+
+$M_{\xi, \delta}^{-1}$ can be expressed using the Woodbury identity as follows.
+
+$$M_{\xi, \delta}^{-1} = I_{N} - X_{S}\left(\xi D_{S}^{-1} +
+X_{S}^{T}X_{S} \right)^{-1}X_{S}^{T}.$$
+
+$M_{\xi, \delta}^{-1}$, which reduces the computational cost, is
+applied to all parts of this algorithm, $\beta$ samples are extracted
+from the posterior using fast sampling(Bhattacharya et al.,2016) as follows.
+
+$$u \sim N_{p}(0, \xi^{-1}D),\quad f \sim N_{N}(0, I_{N}), \\
+v = Xu + f,\quad v^{\star} = M_{\xi, \delta}^{-1}(y/\sigma - v), \\
+\beta = \sigma(u + \xi^{-1}D_{\delta}X^{T}v^{\star}).$$
+
+The above changed algorithm is implemented in the approx_horseshoe and the 
+mapprox_horseshoe functions of this package. The approx_horseshoe uses a fixed 
+$\delta$, while the mapprox_horseshoe uses an algorithm that updates $\delta$ 
+using adaptive probability.
+
+### mapprox_horseshoe function
+
+In this algorithm, the process of updating a new threshold is added by
+applying the properties of the shrinkage weight $k_{j},\ j=1,2,...,p$
+proposed by Piironen and Vehtari (2017). In the prior of $\beta_{j} \sim N(0, \sigma^{2}\tau^{2}\lambda_{j}^{2}) = N(0, \sigma^{2}\xi^{-1} \eta_{j}^{-1})$, 
+the variable $m_{eff}$ is defined as follows.
+
+$$k_{j} = 1/\left(1+n\xi^{-1}s_{j}^{2}\eta_{j}^{-1} \right),
+\quad j=1,2,...,p, \\ m_{eff} = \sum_{j=1}^{p}{\left(1-k_{j} \right)}.$$
+
+$s_{j},\ j=1,2,...,p$ are the diagonal components of $X^{T}X$. For the zero 
+components of $\beta$, $k_{j}$ is derived close to 1, and nonzero's $k_{j}$ is 
+derived close to 0, so the variable $m_{eff}$ is called the effective number of 
+nonzero coefficients. In this algorithm, the threshold $\delta$ is updated to 
+set $s_{\delta} = ceiling(m_{eff})$.
+
+Adaptive probability is defined to satisfy Theorem 5(diminishing adaptation 
+condition) of Roberts and Rosenthal (2007). at $T$th iteration,
+
+$$p(T) = exp[a_{0} + a_{1}T],\quad a_{1} < 0,
+\quad u \sim U(0, 1), \\ if\ u < p(T),\ update\ \delta\ so\ that\
+s_{\delta} = ceiling(m_{eff}).$$
+
+The default is $a_{0} = 0$, $a_{1} = -4.6 \times 10^{-4}$, and 
+under this condition, $p(10000) < 0.01$ is satisfied.
+
+```{r fig.width = 6, fig.height= 4}
+# approx_horseshoe.
+approx_horseshoe_result <- approx_horseshoe(X, y, iteration = 5000)
+approx_horseshoe_postmean <- apply(approx_horseshoe_result$BetaSamples[1001:5000, ],
+                                   MARGIN = 2, mean)
+approx_horseshoe_leftCI <- apply(approx_horseshoe_result$BetaSamples[1001:5000, ], 
+                                 MARGIN = 2, quantile, probs = 0.025)
+approx_horseshoe_rightCI <- apply(approx_horseshoe_result$BetaSamples[1001:5000, ], 
+                                  MARGIN = 2, quantile, probs = 0.975)
+
+# mapprox_horseshoe.
+mapprox_horseshoe_result <- mapprox_horseshoe(X, y, iteration = 5000)
+mapprox_horseshoe_postmean <- apply(mapprox_horseshoe_result$BetaSamples[1001:5000, ],
+                                    MARGIN = 2, mean)
+mapprox_horseshoe_leftCI <- apply(mapprox_horseshoe_result$BetaSamples[1001:5000, ],
+                                  MARGIN = 2, quantile, probs = 0.025)
+mapprox_horseshoe_rightCI <- apply(mapprox_horseshoe_result$BetaSamples[1001:5000, ], 
+                                   MARGIN = 2, quantile, probs = 0.975)
+
+df2 <- data.frame(index = 1:100,
+                  approx_horseshoe_postmean = approx_horseshoe_postmean[1:100],
+                  approx_horseshoe_leftCI = approx_horseshoe_leftCI[1:100],
+                  approx_horseshoe_rightCI = approx_horseshoe_rightCI[1:100],
+                  mapprox_horseshoe_postmean = mapprox_horseshoe_postmean[1:100],
+                  mapprox_horseshoe_leftCI = mapprox_horseshoe_leftCI[1:100],
+                  mapprox_horseshoe_rightCI = mapprox_horseshoe_rightCI[1:100],
+                  true_beta = true_beta[1:100])
+
+# Estimation results of the approx_horseshoe.
+ggplot(data = df2, aes(x = index, y = true_beta)) + 
+  geom_point(size = 2) + 
+  geom_point(aes(x = index, y = approx_horseshoe_postmean), size = 2, col = "red") +
+  geom_errorbar(aes(ymin = approx_horseshoe_leftCI, 
+                    ymax = approx_horseshoe_rightCI), width = .1, col = "red") +
+  labs(title = "95% Credible intervals of the approx_horseshoe", y = "beta")
+
+# Estimation results of the mapprox_horseshoe.
+ggplot(data = df2, aes(x = index, y = true_beta)) + 
+  geom_point(size = 2) + 
+  geom_point(aes(x = index, y = mapprox_horseshoe_postmean), 
+             size = 2, col = "red") +
+  geom_errorbar(aes(ymin = mapprox_horseshoe_leftCI, 
+                    ymax = mapprox_horseshoe_rightCI), width = .1, col = "red") +
+  labs(title = "95% Credible intervals of the mapprox_horseshoe", y = "beta")
+```
+
+In the case of exact_horseshoe in the simulation data, since the $D$ is used as 
+is, it can always be thought of as $length(S) = 500$. On the other hand, since 
+the method of setting the threshold is different in approx_horseshoe and 
+mapprox_horseshoe, a difference occurs in $length(S) = s_{\delta}$, which 
+causes a difference in the calculation speed of the algorithm.
+
+```{r fig.width = 6, fig.height= 4}
+exact_horseshoe_activeset <- rep(p, 5000)
+approx_horseshoe_activeset <- approx_horseshoe_result$ActiveSamples
+mapprox_horseshoe_activeset <- mapprox_horseshoe_result$ActiveSamples
+
+# active set plot
+ggplot(data = data.frame(X = 1:5000,
+                         exact_horseshoe_activeset = exact_horseshoe_activeset,
+                         approx_horseshoe_activeset = approx_horseshoe_activeset,
+                         mapprox_horseshoe_activeset = mapprox_horseshoe_activeset)) +
+  geom_line(mapping = aes(x = X, y = exact_horseshoe_activeset, color = "exact")) +
+  geom_line(mapping = aes(x = X, y = approx_horseshoe_activeset, color = "approx"),
+            alpha = 0.5) +
+  geom_line(mapping = aes(x = X, y = mapprox_horseshoe_activeset, color = "mapprox"),
+            alpha = 0.5) +
+  scale_color_manual(values = c("black", "red", "blue"), 
+                     breaks = c("exact", "approx", "mapprox"), 
+                     labels = c("exact", "approx", "mapprox")) +
+  labs(x = "iteration", y = "length(S)")
+```
+
+# References
+
+Bhattacharya, A., Chakraborty, A., & Mallick, B. K. (2016). Fast sampling with 
+Gaussian scale mixture priors in high-dimensional regression. Biometrika, 
+asw042.
+
+Johndrow, J., Orenstein, P., & Bhattacharya, A. (2020). Scalable Approximate 
+MCMC Algorithms for the Horseshoe Prior. In Journal of Machine Learning 
+Research (Vol. 21).
+
+Piironen, J., & Vehtari, A. (2017). Sparsity information and regularization 
+in the horseshoe and other shrinkage priors. Electronic Journal of 
+Statistics, 11, 5018-5051.
+
+Roberts G, Rosenthal J. Coupling and ergodicity of adaptive Markov chain Monte 
+Carlo algorithms. J Appl Prob. 2007;44:458–475.

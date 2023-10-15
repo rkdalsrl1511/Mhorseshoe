@@ -1,12 +1,24 @@
 Package: Mhorseshoe
-Title: What the Package Does (One Line, Title Case)
+Title: Approximate MCMC algorithm for horseshoe prior
 Version: 0.0.0.9000
-Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+Authors@R: c(
+    person("Kang", "Mingi", , "leehuimin115@g.skku.edu", role = c("aut","cre")),
+    person("Lee", "Kyoungjae", , "leekjstat@gmail.com", role = "aut"))
+Description: Mhorseshoe is a package for a high-dimensional Bayesian linear 
+    modeling algorithm using a horseshoe prior. This package provides three 
+    different algorithm functions. exact_horseshoe, approx_horseshoe, 
+    mapprox_horseshoe. approx_horseshoe and mapprox_horseshoe are versions 
+    that can lower the computational cost than the existing horseshoe 
+    estimator through the approximate MCMC algorithm in the case of p >> N 
+    for p predictors and N observations.
 Encoding: UTF-8
+Imports: stats
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.1
+RoxygenNote: 7.2.3
+License: MIT + file LICENSE
+Suggests: 
+    knitr,
+    rmarkdown,
+    ggplot2,
+    horseshoe
+VignetteBuilder: knitr
