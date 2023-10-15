@@ -11,8 +11,7 @@ functions :
 
 -`exact_horseshoe()` Run the horseshoe estimator assuming a linear model.
 -`approx_horseshoe()` Run the horseshoe estimator with the approximate algorithm applied.
--`mapprox_horseshoe()` Run the horseshoe estimator, which estimates and updates 
-the threshold of the approximate algorithm.
+-`mapprox_horseshoe()` Run the horseshoe estimator, which estimates and updates the threshold of the approximate algorithm.
 
 mapprox_horseshoe updates parameters in the same way as approx_horseshoe, but while 
 approx_horseshoe uses a fixed value as the threshold of the approximation algorithm, 
