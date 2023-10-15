@@ -1,6 +1,6 @@
 Package: Mhorseshoe
 Title: Approximate MCMC algorithm for horseshoe prior
-Version: 0.0.0.9000
+Version: 0.1.0.9000
 Authors@R: c(
     person("Kang", "Mingi", , "leehuimin115@g.skku.edu", role = c("aut","cre")),
     person("Lee", "Kyoungjae", , "leekjstat@gmail.com", role = "aut"))

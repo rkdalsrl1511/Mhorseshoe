@@ -114,7 +114,7 @@ y <- y + e
 ```
 
 For the corresponding simulation data, the results were compared with the 
-**horseshoe** function of the horseshoe package. We fit the data to the 
+horseshoe function of the horseshoe package. We fit the data to the 
 horseshoe and exact_horseshoe functions and plot the results for the first 100 
 indices, including the first 50 indices that are non-zero coefficients.
 

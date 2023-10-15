@@ -1,39 +1,59 @@
-# Mhorseshoe algorithm
+# Mhorseshoe
 
-## 간단 사용법
+## Overview
 
+Mhorseshoe is a package for a high-dimensional Bayesian linear modeling 
+algorithm using a horseshoe prior. A feature of this package is that it 
+implements approximate MCMC algorithm from Johndrow et al. (2020) and provides 
+a horseshoe estimator that can effectively reduce computational costs for 
+high-dimensional sparse data. This package provides three different algorithm 
+functions :
+
+-`exact_horseshoe()` Run the horseshoe estimator assuming a linear model.
+-`approx_horseshoe()` Run the horseshoe estimator with the approximate algorithm applied.
+-`mapprox_horseshoe()` Run the horseshoe estimator, which estimates and updates 
+the threshold of the approximate algorithm.
+
+mapprox_horseshoe updates parameters in the same way as approx_horseshoe, but while 
+approx_horseshoe uses a fixed value as the threshold of the approximation algorithm, 
+mapprox_horseshoe adds a new threshold update process. More information about these 
+can be found in `vignette("Mhorseshoe")`.
+
+## Installation
 
 ```r
-
+install.package("Mhorseshoe")
 ```
 
-## 해야 할 것
+## Usage
 
-- cran 등록 및 수정
+The following linear model assumptions are made.
 
-## git 동기화 관련
+$$L(y\ |\ x, \beta, \sigma^2) = (\frac{1}{\sqrt{2\pi}\sigma})^{-N/2}exp
+\{ -\frac{1}{2\sigma^2}(y-X\beta)^T(y-X\beta)\},\\ X \in 
+\mathbb{R}^{N \times p},\ y \in \mathbb{R}^{N},\ \beta \in \mathbb{R}^{p}$$
 
-우선 git을 설치하고 셸에서 다음을 입력한다.
+- $X \in \mathbb{R}^{N \times p}$ : Matrix of covariates.
+- $y \in \mathbb{R}^{N}$ : Response variable.
 
-git config --global user.name ""
+```r
+# Run functions from the Mhorseshoe package with default settings
+result <- exact_horseshoe(X, y, iteration = 5000)
+result <- approx_horseshoe(X, y, iteration = 5000)
+result <- mapprox_horseshoe(X, y, iteration = 5000)
 
-git config --global user.email ""
+# posterior mean(burn-in = 1000)
+post_mean <- apply(result$BetaSamples[1001:5000, ], MARGIN = 2, mean)
 
-이후 R 프로젝트에서 project options -> version control system을 None에서 git으로 바꾼다.
+# 95% posterior credible intervals(burn-in = 1000)
+post_leftCI <- apply(result$BetaSamples[1001:5000, ], MARGIN = 2, quantile, probs = 0.025)
+post_rightCI <- apply(result$BetaSamples[1001:5000, ], MARGIN = 2, quantile, probs = 0.975)
+```
 
-자동으로 재시작이 되며, 이제 git에서 repository를 새롭게 만들어준다(프로젝트와 동일한 이름으로).
+## References
 
-그리고 origin을 설정하여 git의 repository와 프로젝트를 연동시켜야 한다.
+Johndrow, J., Orenstein, P., & Bhattacharya, A. (2020). Scalable Approximate 
+MCMC Algorithms for the Horseshoe Prior. In Journal of Machine Learning 
+Research (Vol. 21).
 
-1. 셸에 git remote add origin https://github.com/rkdalsrl1511/Mhorseshoe.git 입력
-2. 셸에 git push -u origin master 입력
-3. default branch는 settings에서 바꿀 수 있음.
-4. git remote remove origin을 할 경우, 설정된 origin을 초기화할 수 있다.
-5. git push origin --delete brach.name을 할 경우 repository의 branch를 삭제할 수 있다.
-
-
-깃허브의 private repository이므로
-
-https://rkdalsrl1511@github.com/rkdalsrl1511/Mhorseshoe.git
-
-으로 입력해야 오류가 발생하지 않음
+If you would like to discuss this package, please email leehuimin115@g.skku.edu
