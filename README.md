@@ -7,17 +7,9 @@
 
 ```
 
-## 업데이트
-
-### 06/13
-
-- rejection sampler 수정
-- sampling_modified_edit.R 수정
-
 ## 해야 할 것
 
-- approximate MCMC tau -> sigma -> beta -> eta 순으로
-- M > 1 인 경우 eta 샘플링 도입해보기
+- cran 등록 및 수정
 
 ## git 동기화 관련
 
