@@ -4,7 +4,7 @@
 \name{Mhorseshoe}
 \alias{Mhorseshoe}
 \alias{Mhorseshoe-package}
-\title{Mhorseshoe: Approximate MCMC algorithm for horseshoe prior}
+\title{Mhorseshoe: Approximate Algorithm for Horseshoe Prior}
 \description{
 Mhorseshoe is a package for a high-dimensional Bayesian linear
 modeling algorithm using a horseshoe prior. This package provides three

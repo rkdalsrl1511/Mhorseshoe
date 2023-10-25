@@ -1,16 +1,17 @@
 Package: Mhorseshoe
-Title: Approximate MCMC algorithm for horseshoe prior
-Version: 0.1.0.9000
+Title: Approximate Algorithm for Horseshoe Prior
+Version: 0.1.0
 Authors@R: c(
     person("Kang", "Mingi", , "leehuimin115@g.skku.edu", role = c("aut","cre")),
     person("Lee", "Kyoungjae", , "leekjstat@gmail.com", role = "aut"))
-Description: Mhorseshoe is a package for a high-dimensional Bayesian linear 
-    modeling algorithm using a horseshoe prior. This package provides three 
-    different algorithm functions. exact_horseshoe, approx_horseshoe, 
-    mapprox_horseshoe. approx_horseshoe and mapprox_horseshoe are versions 
-    that can lower the computational cost than the existing horseshoe 
-    estimator through the approximate MCMC algorithm in the case of p >> N 
-    for p predictors and N observations.
+Description: The horseshoe estimator is an algorithm frequently used in
+    high-dimensional Bayesian linear models. Although this algorithm has a good
+    effect on variable selection, it incurs high computational costs in
+    high-dimensional sparse data where p >> N for p predictors and N
+    observations. Therefore, an exact horseshoe estimator algorithm function
+    and an approximate algorithm function that can compensate for the
+    computational cost problem were added to enable use in high-dimensional
+    Bayesian linear regression.
 Encoding: UTF-8
 Imports: stats
 Roxygen: list(markdown = TRUE)

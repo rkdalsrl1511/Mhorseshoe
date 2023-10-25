@@ -80,7 +80,7 @@ $$u \sim N_{p}(0, \xi^{-1}D),\quad f \sim N_{N}(0, I_{N}), \\
 v = Xu + f,\quad v^{\star} = M_{\xi}^{-1}(y/\sigma - v), \\
 \beta = \sigma(u + \xi^{-1}DX^{T}v^{\star}).$$
 
-For simulation, the data size was set to N = 500, p = 1000, and the design 
+For simulation, the data size was set to N = 300, p = 500, and the design 
 matrix $X=\{x_{j} \}_{j=1}^{p}$, true value of beta were set as follows.
 
 $$x_{j} \sim N_{N}\left(0, I_{N} \right), \\ y_{i} \sim N(x_{i}\beta, 4), \\ 
@@ -122,16 +122,16 @@ indices, including the first 50 indices that are non-zero coefficients.
 # horseshoe in horseshoe package.
 horseshoe_result <- horseshoe::horseshoe(y, X, method.tau = "halfCauchy",
                                          method.sigma = "Jeffreys",
-                                         burn = 1000, nmc = 4000)
+                                         burn = 0, nmc = 500)
 
 # exact_horseshoe.
-exact_horseshoe_result <- exact_horseshoe(X, y, iteration = 5000)
-exact_horseshoe_postmean <- apply(exact_horseshoe_result$BetaSamples[1001:5000, ], 
-                        MARGIN = 2, mean)
-exact_horseshoe_leftCI <- apply(exact_horseshoe_result$BetaSamples[1001:5000, ], 
-                      MARGIN = 2, quantile, probs = 0.025)
-exact_horseshoe_rightCI <- apply(exact_horseshoe_result$BetaSamples[1001:5000, ], 
-                      MARGIN = 2, quantile, probs = 0.975)
+exact_horseshoe_result <- exact_horseshoe(X, y, iteration = 500)
+exact_horseshoe_postmean <- apply(exact_horseshoe_result$BetaSamples, 
+                                  MARGIN = 2, mean)
+exact_horseshoe_leftCI <- apply(exact_horseshoe_result$BetaSamples, 
+                                MARGIN = 2, quantile, probs = 0.025)
+exact_horseshoe_rightCI <- apply(exact_horseshoe_result$BetaSamples,
+                                 MARGIN = 2, quantile, probs = 0.975)
 
 df <- data.frame(index = 1:100,
                  horseshoe_postmean = horseshoe_result$BetaHat[1:100],
@@ -237,21 +237,21 @@ under this condition, $p(10000) < 0.01$ is satisfied.
 
 ```{r fig.width = 6, fig.height= 4}
 # approx_horseshoe.
-approx_horseshoe_result <- approx_horseshoe(X, y, iteration = 5000)
-approx_horseshoe_postmean <- apply(approx_horseshoe_result$BetaSamples[1001:5000, ],
+approx_horseshoe_result <- approx_horseshoe(X, y, iteration = 500)
+approx_horseshoe_postmean <- apply(approx_horseshoe_result$BetaSamples,
                                    MARGIN = 2, mean)
-approx_horseshoe_leftCI <- apply(approx_horseshoe_result$BetaSamples[1001:5000, ], 
+approx_horseshoe_leftCI <- apply(approx_horseshoe_result$BetaSamples, 
                                  MARGIN = 2, quantile, probs = 0.025)
-approx_horseshoe_rightCI <- apply(approx_horseshoe_result$BetaSamples[1001:5000, ], 
+approx_horseshoe_rightCI <- apply(approx_horseshoe_result$BetaSamples, 
                                   MARGIN = 2, quantile, probs = 0.975)
 
 # mapprox_horseshoe.
-mapprox_horseshoe_result <- mapprox_horseshoe(X, y, iteration = 5000)
-mapprox_horseshoe_postmean <- apply(mapprox_horseshoe_result$BetaSamples[1001:5000, ],
+mapprox_horseshoe_result <- mapprox_horseshoe(X, y, iteration = 500)
+mapprox_horseshoe_postmean <- apply(mapprox_horseshoe_result$BetaSamples,
                                     MARGIN = 2, mean)
-mapprox_horseshoe_leftCI <- apply(mapprox_horseshoe_result$BetaSamples[1001:5000, ],
+mapprox_horseshoe_leftCI <- apply(mapprox_horseshoe_result$BetaSamples,
                                   MARGIN = 2, quantile, probs = 0.025)
-mapprox_horseshoe_rightCI <- apply(mapprox_horseshoe_result$BetaSamples[1001:5000, ], 
+mapprox_horseshoe_rightCI <- apply(mapprox_horseshoe_result$BetaSamples, 
                                    MARGIN = 2, quantile, probs = 0.975)
 
 df2 <- data.frame(index = 1:100,
@@ -288,12 +288,12 @@ mapprox_horseshoe, a difference occurs in $length(S) = s_{\delta}$, which
 causes a difference in the calculation speed of the algorithm.
 
 ```{r fig.width = 6, fig.height= 4}
-exact_horseshoe_activeset <- rep(p, 5000)
+exact_horseshoe_activeset <- rep(p, 500)
 approx_horseshoe_activeset <- approx_horseshoe_result$ActiveSamples
 mapprox_horseshoe_activeset <- mapprox_horseshoe_result$ActiveSamples
 
 # active set plot
-ggplot(data = data.frame(X = 1:5000,
+ggplot(data = data.frame(X = 1:500,
                          exact_horseshoe_activeset = exact_horseshoe_activeset,
                          approx_horseshoe_activeset = approx_horseshoe_activeset,
                          mapprox_horseshoe_activeset = mapprox_horseshoe_activeset)) +
@@ -302,10 +302,10 @@ ggplot(data = data.frame(X = 1:5000,
             alpha = 0.5) +
   geom_line(mapping = aes(x = X, y = mapprox_horseshoe_activeset, color = "mapprox"),
             alpha = 0.5) +
-  scale_color_manual(values = c("black", "red", "blue"), 
+  scale_color_manual(name = "algorithm",
+                     values = c("black", "red", "blue"), 
                      breaks = c("exact", "approx", "mapprox"), 
-                     labels = c("exact", "approx", "mapprox")) +
-  labs(x = "iteration", y = "length(S)")
+                     labels = c("exact", "approx", "mapprox"))
 ```
 
 # References
