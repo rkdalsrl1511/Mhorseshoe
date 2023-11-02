@@ -13,7 +13,10 @@ Description: The horseshoe estimator is an algorithm frequently used in
     computational cost problem were added to enable use in high-dimensional
     Bayesian linear regression.
 Encoding: UTF-8
-Imports: stats
+Imports: 
+    stats,
+    Rcpp (>= 1.0.11)
+LinkingTo: Rcpp
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 License: MIT + file LICENSE
