@@ -74,26 +74,23 @@
 #' algorithm.}
 #'
 #' @examples
-#' \dontrun{
 #' # Making simulation data.
 #' set.seed(123)
-#' N <- 100
-#' p <- 200
-#' true_beta <- c(rep(1, 10), rep(0, 190))
+#' N <- 50
+#' p <- 100
+#' true_beta <- c(rep(1, 10), rep(0, 90))
 #'
 #' X <- matrix(1, nrow = N, ncol = p) # Design matrix X.
-#' for (i in 1:p) {
+#' for (i in 1:p)
 #'   X[, i] <- stats::rnorm(N, mean = 0, sd = 1)
-#' }
 #'
 #' y <- vector(mode = "numeric", length = N) # Response variable y.
 #' e <- rnorm(N, mean = 0, sd = 2) # error term e.
-#' for (i in 1:50) {
+#' for (i in 1:10)
 #'   y <- y + true_beta[i] * X[, i]
-#' }
 #' y <- y + e
 #'
-#' # Run as default
+#' # Run
 #' result <- approx_horseshoe(X, y, iteration = 1000)
 #'
 #' # posterior mean
@@ -105,30 +102,44 @@
 #'
 #' # Upper bound of the 95% credible interval
 #' post_rightCI <- apply(result$BetaSamples, MARGIN = 2,
-#'                       quantile, probs = 0.975)}
+#'                       quantile, probs = 0.975)
 #'
 #' @export
-approx_horseshoe <- function(X, y, iteration = 5000, threshold = NULL,
-                             a = 1 / 5, b = 10, s = 0.8, tau = 1, sigma2 = 1,
-                             w = 1) {
+approx_horseshoe <- function(X, y, iteration = 5000, auto.threshold = TRUE,
+                             threshold = 0, a = 0.2, b = 10, s = 0.8,
+                             tau = 1, sigma2 = 1, w = 1, alpha = 0.05) {
   N <- nrow(X)
   p <- ncol(X)
-  if (is.null(threshold))
-    threshold <- ifelse(p >= N, 1 / p, 1 / sqrt(N * p))
   eta <- rep(1, p)
   xi <- tau^(-2)
-  Q <- t(X) %*% X
+  if (auto.threshold == TRUE) {
+    S <- p
+    active_index <- 1:p
+    m_eff <- p
+    Q <- t(X) %*% X
+    s2.vec <- diag(Q)
+  } else {
+    # 이 부분에 auto.threshold = FALSE, threshold = 0일때 메세지 출력하기
+    if (threshold == 0) {
+      threshold <- ifelse(p >= N, 1/p, 1/sqrt(N*p))
+    }
+    Q <- t(X) %*% X
+  }
   betaout <- matrix(0, nrow = iteration, ncol = p)
   etaout <- matrix(0, nrow = iteration, ncol = p)
   xiout <- rep(0, iteration)
   sigma2out <- rep(0, iteration)
   activeout <- rep(0, iteration)
+  # Run
   for(i in 1:iteration) {
     log_xi <- stats::rnorm(1, mean = log(xi), sd = s)
     new_xi <- exp(log_xi)
-    max_xi <- max(xi, new_xi)
-    active_index <- which((1 / (eta * max_xi) > threshold))
-    S <- length(active_index)
+    # When to use a fixed threshold
+    if (auto.threshold == FALSE) {
+      max_xi <- max(xi, new_xi)
+      active_index <- which((1 / (eta * max_xi) > threshold))
+      S <- length(active_index)
+    }
     Q_s <- Q[active_index, active_index, drop = FALSE]
     X_s <- X[, active_index, drop = FALSE]
     if (S < N) {
@@ -182,7 +193,7 @@ approx_horseshoe <- function(X, y, iteration = 5000, threshold = NULL,
         }
       }
     }
-    sigma2 <- 1/stats::rgamma(1, shape = (w + N) / 2, rate = (w + ymy) / 2)
+    sigma2 <- 1/stats::rgamma(1, shape = (w + N)/2, rate = (w + ymy)/2)
     diag_D <- 1 / (eta * xi)
     u <- stats::rnorm(n = p, mean = 0, sd = sqrt(diag_D))
     f <- stats::rnorm(n = N, mean = 0, sd = 1)
@@ -190,13 +201,13 @@ approx_horseshoe <- function(X, y, iteration = 5000, threshold = NULL,
     diag_D[-active_index] <- 0
     U <- diag_D * t(X)
     if (S < N) {
-      yv <- y / sqrt(sigma2) - v
+      yv <- y/sqrt(sigma2) - v
       Xyv <- t(X_s) %*% yv
       m <- solve(Q_star, Xyv)
       m_star <- yv - X_s %*% m
       new_beta <- sqrt(sigma2) * (u + U %*% m_star)
     } else {
-      v_star <- solve(M, (y / sqrt(sigma2) - v))
+      v_star <- solve(M, (y/sqrt(sigma2) - v))
       new_beta <- sqrt(sigma2) * (u + U %*% v_star)
     }
     betaout[i, ] <- new_beta
@@ -204,14 +215,33 @@ approx_horseshoe <- function(X, y, iteration = 5000, threshold = NULL,
     xiout[i] <- xi
     sigma2out[i] <- sigma2
     activeout[i] <- S
-    eta <- rejection_sampler((new_beta^2) * xi / (2 * sigma2), a, b)
+    eta <- rejection_sampler((new_beta^2)*xi/(2*sigma2), a, b)
     eta <- ifelse(eta <= 2.220446e-16, 2.220446e-16, eta)
-    if ((i %% 1000) == 0)
-      cat("Number of iterations : ", i, "\n")
+    if (auto.threshold == TRUE) {
+      if (i %% t == 0) {
+        u_i <- stats::runif(1, 0, 1)
+        p_i <- exp(alpha0 + alpha1 * i)
+        if (u_i < p_i)
+          m_eff <- sum(1 / ((eta*xi)/s2.vec + 1))
+      }
+      threshold <- sort(eta)[ceiling(m_eff)]
+      active_index <- which(eta <= threshold)
+      S <- length(active_index)
+    }
   }
+
+  # 수정할 부분(return에 CI 추가)
+  left <- floor(alpha * effsamp/2)
+  right <- ceiling((1 - alpha/2) * effsamp)
+  BetaSort <- apply(betaout, 1, sort, decreasing = FALSE)
+  left.points <- BetaSort[left, ]
+  right.points <- BetaSort[right, ]
+  post_leftCI <- apply(result$BetaSamples, MARGIN = 2, quantile, probs = 0.025)
+  post_rightCI <- apply(result$BetaSamples, MARGIN = 2, quantile, probs = 0.975)
+
   result <- list(BetaSamples = betaout,
-                 LambdaSamples = 1 / sqrt(etaout),
-                 TauSamples = 1 / sqrt(xiout),
+                 LambdaSamples = 1/sqrt(etaout),
+                 TauSamples = 1/sqrt(xiout),
                  Sigma2Samples = sigma2out,
                  ActiveSamples = activeout)
   return(result)

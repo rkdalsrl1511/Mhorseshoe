@@ -8,13 +8,15 @@ approx_horseshoe(
   X,
   y,
   iteration = 5000,
-  threshold = NULL,
-  a = 1/5,
+  auto.threshold = TRUE,
+  threshold = 0,
+  a = 0.2,
   b = 10,
   s = 0.8,
   tau = 1,
   sigma2 = 1,
-  w = 1
+  w = 1,
+  alpha = 0.05
 )
 }
 \arguments{
@@ -112,26 +114,23 @@ v = Xu + f,\quad v^{\star} = M_{\xi, \delta}^{-1}(y/\sigma - v), \\
 \beta = \sigma(u + \xi^{-1}D_{\delta}X^{T}v^{\star}).}
 }
 \examples{
-\dontrun{
 # Making simulation data.
 set.seed(123)
-N <- 100
-p <- 200
-true_beta <- c(rep(1, 10), rep(0, 190))
+N <- 50
+p <- 100
+true_beta <- c(rep(1, 10), rep(0, 90))
 
 X <- matrix(1, nrow = N, ncol = p) # Design matrix X.
-for (i in 1:p) {
+for (i in 1:p)
   X[, i] <- stats::rnorm(N, mean = 0, sd = 1)
-}
 
 y <- vector(mode = "numeric", length = N) # Response variable y.
 e <- rnorm(N, mean = 0, sd = 2) # error term e.
-for (i in 1:50) {
+for (i in 1:10)
   y <- y + true_beta[i] * X[, i]
-}
 y <- y + e
 
-# Run as default
+# Run
 result <- approx_horseshoe(X, y, iteration = 1000)
 
 # posterior mean
@@ -143,7 +142,7 @@ post_leftCI <- apply(result$BetaSamples, MARGIN = 2,
 
 # Upper bound of the 95\% credible interval
 post_rightCI <- apply(result$BetaSamples, MARGIN = 2,
-                      quantile, probs = 0.975)}
+                      quantile, probs = 0.975)
 
 }
 \references{

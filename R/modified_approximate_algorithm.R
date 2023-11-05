@@ -205,8 +205,6 @@ mapprox_horseshoe <- function(X, y, iteration = 5000, a = 1/5, b = 10,
     threshold <- sort(eta)[ceiling(m_eff)]
     active_index <- which(eta <= threshold)
     S <- length(active_index)
-    if ((i %% 1000) == 0)
-      cat("Number of iterations : ", i, "\n")
   }
   result <- list(BetaSamples = betaout,
                  LambdaSamples = 1 / sqrt(etaout),

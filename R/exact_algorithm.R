@@ -162,8 +162,6 @@ exact_horseshoe <- function(X, y, iteration = 5000, a = 1/5, b = 10, s = 0.8,
     sigma2out[i] <- sigma2
     eta <- rejection_sampler((new_beta^2) * xi / (2 * sigma2), a, b)
     eta <- ifelse(eta <= 2.220446e-16, 2.220446e-16, eta)
-    if ((i %% 1000) == 0)
-      cat("Number of iterations : ", i, "\n")
   }
   result <- list(BetaSamples = betaout,
                  LambdaSamples = 1 / sqrt(etaout),
