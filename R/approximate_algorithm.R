@@ -231,8 +231,9 @@ approx_horseshoe <- function(X, y, burn = 1000, iteration = 5000,
       if (i %% t == 0) {
         u_i <- stats::runif(1, 0, 1)
         p_i <- exp(alpha0 + alpha1 * i)
-        if (u_i < p_i)
+        if (u_i < p_i) {
           m_eff <- sum(1/((eta*xi)/s2.vec + 1))
+        }
       }
       threshold <- sort(eta)[ceiling(m_eff)]
       active_index <- which(eta <= threshold)
