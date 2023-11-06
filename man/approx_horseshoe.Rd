@@ -7,6 +7,7 @@
 approx_horseshoe(
   X,
   y,
+  burn = 1000,
   iteration = 5000,
   auto.threshold = TRUE,
   threshold = 0,
@@ -130,8 +131,11 @@ for (i in 1:10)
   y <- y + true_beta[i] * X[, i]
 y <- y + e
 
-# Run
-result <- approx_horseshoe(X, y, iteration = 1000)
+# Run with auto.threshold option
+result <- approx_horseshoe(X, y, iteration = 500)
+
+# Run with fixed threshold option
+# result <- approx_horseshoe(X, y, iteration = 500, auto.threshold = FALSE, threshold = 1/5)
 
 # posterior mean
 post_mean <- apply(result$BetaSamples, MARGIN = 2, mean)

@@ -90,8 +90,11 @@
 #'   y <- y + true_beta[i] * X[, i]
 #' y <- y + e
 #'
-#' # Run
-#' result <- approx_horseshoe(X, y, iteration = 1000)
+#' # Run with auto.threshold option
+#' result <- approx_horseshoe(X, y, iteration = 500)
+#'
+#' # Run with fixed threshold option
+#' # result <- approx_horseshoe(X, y, iteration = 500, auto.threshold = FALSE, threshold = 1/5)
 #'
 #' # posterior mean
 #' post_mean <- apply(result$BetaSamples, MARGIN = 2, mean)
@@ -105,36 +108,37 @@
 #'                       quantile, probs = 0.975)
 #'
 #' @export
-approx_horseshoe <- function(X, y, iteration = 5000, auto.threshold = TRUE,
-                             threshold = 0, a = 0.2, b = 10, s = 0.8,
-                             tau = 1, sigma2 = 1, w = 1, alpha = 0.05) {
+approx_horseshoe <- function(X, y, burn = 1000, iteration = 5000,
+                             auto.threshold = TRUE, threshold = 0, a = 0.2,
+                             b = 10, s = 0.8, tau = 1, sigma2 = 1, w = 1,
+                             alpha = 0.05) {
   N <- nrow(X)
   p <- ncol(X)
   eta <- rep(1, p)
   xi <- tau^(-2)
+  Q <- t(X) %*% X
   if (auto.threshold == TRUE) {
     S <- p
     active_index <- 1:p
     m_eff <- p
-    Q <- t(X) %*% X
     s2.vec <- diag(Q)
-  } else {
-    # 이 부분에 auto.threshold = FALSE, threshold = 0일때 메세지 출력하기
-    if (threshold == 0) {
-      threshold <- ifelse(p >= N, 1/p, 1/sqrt(N*p))
-    }
-    Q <- t(X) %*% X
+  } else if (threshold == 0) {
+    threshold <- ifelse(p >= N, 1/p, 1/sqrt(N*p))
+    message("You chose FALSE for the auto.threshold argument. ",
+            "but since threshold = 0 is set, it is reset to ",
+            "threshold = ", threshold)
   }
   betaout <- matrix(0, nrow = iteration, ncol = p)
   etaout <- matrix(0, nrow = iteration, ncol = p)
   xiout <- rep(0, iteration)
   sigma2out <- rep(0, iteration)
   activeout <- rep(0, iteration)
-  # Run
-  for(i in 1:iteration) {
+  nmc <- burn + iteration
+  # run
+  for(i in 1:nmc) {
     log_xi <- stats::rnorm(1, mean = log(xi), sd = s)
     new_xi <- exp(log_xi)
-    # When to use a fixed threshold
+    # when to use a fixed threshold
     if (auto.threshold == FALSE) {
       max_xi <- max(xi, new_xi)
       active_index <- which((1 / (eta * max_xi) > threshold))
@@ -142,6 +146,7 @@ approx_horseshoe <- function(X, y, iteration = 5000, auto.threshold = TRUE,
     }
     Q_s <- Q[active_index, active_index, drop = FALSE]
     X_s <- X[, active_index, drop = FALSE]
+    # xi update
     if (S < N) {
       Xy <- t(X_s) %*% y
       y_square <- t(y) %*% y
@@ -168,20 +173,20 @@ approx_horseshoe <- function(X, y, iteration = 5000, auto.threshold = TRUE,
         }
       }
     } else {
-      DX <- (1 / eta[active_index]) * t(X_s)
+      DX <- (1/eta[active_index]) * t(X_s)
       XDX <- X_s %*% DX
-      M <- diag(N) + XDX / xi
+      M <- diag(N) + XDX/xi
       m <- solve(M, y)
       ymy <- t(y) %*% m
       if (s != 0) {
-        new_M <- diag(N) + XDX / new_xi
+        new_M <- diag(N) + XDX/new_xi
         new_m <- solve(new_M, y)
         new_ymy <- t(y) %*% new_m
         cM <- diag(chol(M))^2
         new_cM <- diag(chol(new_M))^2
-        curr_ratio <- -sum(log(cM)) / 2 - ((N + w) / 2) * log(w + ymy) -
+        curr_ratio <- -sum(log(cM))/2 - ((N + w)/2) * log(w + ymy) -
           log(sqrt(xi) * (1 + xi))
-        new_ratio <- -sum(log(new_cM)) / 2 - ((N + w) / 2)*log(w + new_ymy) -
+        new_ratio <- -sum(log(new_cM))/2 - ((N + w)/2)*log(w + new_ymy) -
           log(sqrt(new_xi) * (1 + new_xi))
         acceptance_probability <- exp(new_ratio - curr_ratio + log(new_xi) -
                                         log(xi))
@@ -193,7 +198,9 @@ approx_horseshoe <- function(X, y, iteration = 5000, auto.threshold = TRUE,
         }
       }
     }
+    # sigma update
     sigma2 <- 1/stats::rgamma(1, shape = (w + N)/2, rate = (w + ymy)/2)
+    # beta update
     diag_D <- 1 / (eta * xi)
     u <- stats::rnorm(n = p, mean = 0, sd = sqrt(diag_D))
     f <- stats::rnorm(n = N, mean = 0, sd = 1)
@@ -210,39 +217,44 @@ approx_horseshoe <- function(X, y, iteration = 5000, auto.threshold = TRUE,
       v_star <- solve(M, (y/sqrt(sigma2) - v))
       new_beta <- sqrt(sigma2) * (u + U %*% v_star)
     }
+    # save results
     betaout[i, ] <- new_beta
     etaout[i, ] <- eta
     xiout[i] <- xi
     sigma2out[i] <- sigma2
     activeout[i] <- S
+    # eta update
     eta <- rejection_sampler((new_beta^2)*xi/(2*sigma2), a, b)
     eta <- ifelse(eta <= 2.220446e-16, 2.220446e-16, eta)
+    # when use a auto threshold
     if (auto.threshold == TRUE) {
       if (i %% t == 0) {
         u_i <- stats::runif(1, 0, 1)
         p_i <- exp(alpha0 + alpha1 * i)
         if (u_i < p_i)
-          m_eff <- sum(1 / ((eta*xi)/s2.vec + 1))
+          m_eff <- sum(1/((eta*xi)/s2.vec + 1))
       }
       threshold <- sort(eta)[ceiling(m_eff)]
       active_index <- which(eta <= threshold)
       S <- length(active_index)
     }
   }
-
-  # 수정할 부분(return에 CI 추가)
-  left <- floor(alpha * effsamp/2)
-  right <- ceiling((1 - alpha/2) * effsamp)
-  BetaSort <- apply(betaout, 1, sort, decreasing = FALSE)
-  left.points <- BetaSort[left, ]
-  right.points <- BetaSort[right, ]
-  post_leftCI <- apply(result$BetaSamples, MARGIN = 2, quantile, probs = 0.025)
-  post_rightCI <- apply(result$BetaSamples, MARGIN = 2, quantile, probs = 0.975)
-
-  result <- list(BetaSamples = betaout,
-                 LambdaSamples = 1/sqrt(etaout),
-                 TauSamples = 1/sqrt(xiout),
-                 Sigma2Samples = sigma2out,
-                 ActiveSamples = activeout)
+  betaout <- betaout[(burn+1):nmc, ]
+  lambdaout <- 1/sqrt(etaout[(burn+1):nmc, ])
+  tauout <- 1/sqrt(xiout[(burn+1):nmc])
+  sigma2out <- sigma2out[(burn+1):nmc]
+  activeout <- activeout[(burn+1):nmc]
+  betahat <- apply(betaout, 2, mean)
+  lambdahat <- apply(lambdaout, 2, mean)
+  tauhat <- mean(tauout)
+  sigma2hat <- mean(sigma2out)
+  activemean <- mean(activeout)
+  leftci <- apply(result$BetaSamples, 2, stats::quantile, probs = 0.025)
+  rightci <- apply(result$BetaSamples, 2, stats::quantile, probs = 0.975)
+  result <- list(BetaHat = betahat, LeftCI = leftci, RightCI = rightci,
+                 Sigma2Hat = sigma2hat, TauHat = tauhat, LambdaHat = lambdahat,
+                 ActiveMean = activemean, BetaSamples = betaout,
+                 LambdaSamples = lambdaout, TauSamples = tauout,
+                 Sigma2Samples = sigma2out, NumOfActive = activeout)
   return(result)
 }
