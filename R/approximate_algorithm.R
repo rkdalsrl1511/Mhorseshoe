@@ -124,9 +124,9 @@
 #' @export
 approx_horseshoe <- function(X, y, burn = 1000, iter = 5000,
                              auto.threshold = TRUE, threshold = 0, tau = 1,
-                             s = 0.8, sigma2 = 1, w = 1, a = 0.2, b = 10,
-                             t = 10, adapt_p0 = 0, adapt_p1 = -4.6*10^(-4),
-                             alpha = 0.05) {
+                             s = 0.8, sigma2 = 1, w = 1, alpha = 0.05, a = 0.2,
+                             b = 10, t = 10, adapt_p0 = 0,
+                             adapt_p1 = -4.6*10^(-4)) {
   N <- nrow(X)
   p <- ncol(X)
   eta <- rep(1, p)
