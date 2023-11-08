@@ -7,7 +7,7 @@
 exact_horseshoe(
   X,
   y,
-  iteration = 5000,
+  iter = 5000,
   a = 1/5,
   b = 10,
   s = 0.8,
@@ -21,7 +21,7 @@ exact_horseshoe(
 
 \item{y}{Response vector, \eqn{y \in \mathbb{R}^{N}}.}
 
-\item{iteration}{Number of samples to be drawn from the posterior.}
+\item{iter}{Number of samples to be drawn from the posterior.}
 
 \item{a}{Parameter of the rejection sampler, and it is recommended to leave
 it at the default value, \eqn{a = 1/5}.}

@@ -8,15 +8,18 @@ approx_horseshoe(
   X,
   y,
   burn = 1000,
-  iteration = 5000,
+  iter = 5000,
   auto.threshold = TRUE,
   threshold = 0,
-  a = 0.2,
-  b = 10,
-  s = 0.8,
   tau = 1,
+  s = 0.8,
   sigma2 = 1,
   w = 1,
+  a = 0.2,
+  b = 10,
+  t = 10,
+  adapt_p0 = 0,
+  adapt_p1 = -4.6 * 10^(-4),
   alpha = 0.05
 )
 }
@@ -25,15 +28,30 @@ approx_horseshoe(
 
 \item{y}{Response vector, \eqn{y \in \mathbb{R}^{N}}.}
 
-\item{iteration}{Number of samples to be drawn from the posterior.}
+\item{iter}{Number of samples to be drawn from the posterior.}
 
-\item{threshold}{Threshold \eqn{\delta} to be used in the approximate MCMC
-algorithm. If you select NULL(this is the default), the default is set
-according to the sizes of N and p. if \eqn{p < N},
-\eqn{\delta = 1/\sqrt{Np}}, else \eqn{\delta = 1/p}. Or, you can set the
-value directly through this argument. For more information about
-\eqn{\delta}, see \code{\link{Mhorseshoe}} and 4.1 of Johndrow et al.
-(2020).}
+\item{auto.threshold}{Argument for setting whether to use an algorithm that
+automatically updates the threshold using adaptive probability.}
+
+\item{threshold}{Threshold to be used in the approximate MCMC algorithm.
+If you select 0(this is the default), the default is set according to the
+sizes of N and p. if \eqn{p < N}, \eqn{\delta = 1/\sqrt{Np}}, else
+\eqn{\delta = 1/p}. Or, you can set the value directly through this
+argument. For more information about \eqn{\delta}, see
+\code{\link{Mhorseshoe}} and 4.1 of Johndrow et al. (2020).}
+
+\item{tau}{Initial value of the global shrinkage parameter \eqn{\tau} when
+starting the algorithm. If argument \eqn{s} is set to 0 and this argument
+is set, analysis of a fixed \eqn{\tau} is performed. Default is 1.}
+
+\item{s}{\eqn{s^{2}} is the variance of the MH proposal distribution set by
+the user. 0.8 is a good default. If set to 0, the algorithm proceeds by
+fixing the global shrinkage parameter \eqn{\tau} to the initial setting
+value.}
+
+\item{sigma2}{Default for error variance \eqn{\sigma^{2}} is 1.}
+
+\item{w}{Parameter of gamma prior for \eqn{\sigma^{2}}. Default is 1.}
 
 \item{a}{Parameter of the rejection sampler, and it is recommended to leave
 it at the default value, \eqn{a = 1/5}.}
@@ -41,29 +59,31 @@ it at the default value, \eqn{a = 1/5}.}
 \item{b}{Parameter of the rejection sampler, and it is recommended to leave
 it at the default value, \eqn{b = 10}.}
 
-\item{s}{\eqn{s^{2}} is the variance of the MH proposal distribution set by
-the user. 0.8 is a good default. If set to 0, the algorithm proceeds by
-fixing the global shrinkage parameter \eqn{\tau} to the initial setting
-value.}
+\item{t}{Threshold update cycle for adaptive probability method when
+auto.threshold is set to TRUE. default is 10.}
 
-\item{tau}{Initial value of the global shrinkage parameter \eqn{\tau} when
-starting the algorithm. If argument \eqn{s} is set to 0 and this argument
-is set, analysis of a fixed \eqn{\tau} is performed. Default is 1.}
+\item{adapt_p0}{Parameter \eqn{p_{0}} of adaptive probability,
+\eqn{p(t) = exp[p_{0} + p_{1}t]}. default is 0.}
 
-\item{sigma2}{Default for error variance \eqn{\sigma^{2}} is 1.}
-
-\item{w}{Parameter of gamma prior for \eqn{\sigma^{2}}. Default is 1.}
+\item{adapt_p1}{Parameter \eqn{a_{1}} of adaptive probability,
+\eqn{p(t) = exp[p_{0} + p_{1}t]}. default is \eqn{-4.6 \times 10^{-4}}.}
 }
 \value{
-\item{BetaSamples}{Samples from the posterior of the parameter
-\eqn{\beta}.}
+\item{BetaHat}{Posterior mean of \eqn{\beta}.}
+\item{LeftCI}{Lower bound of credible interval for \eqn{\beta}.}
+\item{RightCI}{Upper bound of credible interval for \eqn{\beta}.}
+\item{Sigma2Hat}{Posterior mean of \eqn{\sigma^{2}}.}
+\item{TauHat}{Posterior mean of \eqn{\tau}.}
+\item{LambdaHat}{Posterior mean of \eqn{\lambda_{j},\ j=1,2,...p.}.}
+\item{ActiveMean}{Average number of elements in the active set per iteration
+in this algorithm.}
+\item{BetaSamples}{Samples from the posterior of \eqn{\beta}.}
 \item{LambdaSamples}{Lambda samples through rejection sampling.}
 \item{TauSamples}{Tau samples through MH algorithm.}
 \item{Sigma2Samples}{Samples from the posterior of the parameter
 \eqn{sigma^{2}}.}
-\item{ActiveSamples}{Samples recording the number of columns that satisfy
-condition \eqn{\tau^{2}\lambda^{2}_{j} > \delta,\ j=1,2,...,p} in this
-algorithm.}
+\item{ActiveSet}{Matrix indicating active elements as 1 and non-active
+elements as 0 per iteration of the MCMC algorithm.}
 }
 \description{
 In this function, The algorithm introduced in Section 2.2 of Johndrow et al.
@@ -122,31 +142,31 @@ p <- 100
 true_beta <- c(rep(1, 10), rep(0, 90))
 
 X <- matrix(1, nrow = N, ncol = p) # Design matrix X.
-for (i in 1:p)
+for (i in 1:p) {
   X[, i] <- stats::rnorm(N, mean = 0, sd = 1)
+}
 
 y <- vector(mode = "numeric", length = N) # Response variable y.
 e <- rnorm(N, mean = 0, sd = 2) # error term e.
-for (i in 1:10)
+for (i in 1:10) {
   y <- y + true_beta[i] * X[, i]
+}
 y <- y + e
 
 # Run with auto.threshold option
-result <- approx_horseshoe(X, y, iteration = 500)
+result <- approx_horseshoe(X, y, iteration = 1000)
 
-# Run with fixed threshold option
-# result <- approx_horseshoe(X, y, iteration = 500, auto.threshold = FALSE, threshold = 1/5)
+# Run with fixed threshold
+# result <- approx_horseshoe(X, y, iteration = 1000, auto.threshold = FALSE)
 
 # posterior mean
-post_mean <- apply(result$BetaSamples, MARGIN = 2, mean)
+betahat <- result$BetaHat
 
 # Lower bound of the 95\% credible interval
-post_leftCI <- apply(result$BetaSamples, MARGIN = 2,
-                     quantile, probs = 0.025)
+post_leftCI <- result$LeftCI
 
 # Upper bound of the 95\% credible interval
-post_rightCI <- apply(result$BetaSamples, MARGIN = 2,
-                      quantile, probs = 0.975)
+post_RightCI <- result$RightCI
 
 }
 \references{

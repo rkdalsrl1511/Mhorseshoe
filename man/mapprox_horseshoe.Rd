@@ -24,8 +24,6 @@ mapprox_horseshoe(
 
 \item{y}{Response vector, \eqn{y \in \mathbb{R}^{N}}.}
 
-\item{iteration}{Number of samples to be drawn from the posterior.}
-
 \item{a}{Parameter of the rejection sampler, and it is recommended to leave
 it at the default value, \eqn{a = 1/5}.}
 

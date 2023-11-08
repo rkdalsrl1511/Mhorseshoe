@@ -99,9 +99,9 @@
 #' Research (Vol. 21).
 #'
 #' @keywords internal
-#' @import stats
 #' @useDynLib Mhorseshoe, .registration = TRUE
 #' @importFrom Rcpp sourceCpp evalCpp
+#' @import stats
 #' @docType package
 #' @name Mhorseshoe
 "_PACKAGE"
