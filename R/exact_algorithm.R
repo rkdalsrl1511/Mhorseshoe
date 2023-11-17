@@ -15,7 +15,9 @@
 #'
 #' @param X Design matrix, \eqn{X \in \mathbb{R}^{N \times p}}.
 #' @param y Response vector, \eqn{y \in \mathbb{R}^{N}}.
-#' @param iter Number of samples to be drawn from the posterior.
+#' @param burn Number of burn-in samples. Default is 1000.
+#' @param iter Number of samples to be drawn from the posterior. Default is
+#'  5000.
 #' @param a Parameter of the rejection sampler, and it is recommended to leave
 #'  it at the default value, \eqn{a = 1/5}.
 #' @param b Parameter of the rejection sampler, and it is recommended to leave
@@ -27,8 +29,9 @@
 #' @param tau Initial value of the global shrinkage parameter \eqn{\tau} when
 #'  starting the algorithm. If argument \eqn{s} is set to 0 and this argument
 #'  is set, analysis of a fixed \eqn{\tau} is performed. Default is 1.
-#' @param sigma2 Default for error variance \eqn{\sigma^{2}} is 1.
+#' @param sigma2 error variance \eqn{\sigma^{2}}. Default is 1.
 #' @param w Parameter of gamma prior for \eqn{\sigma^{2}}. Default is 1.
+#' @param alpha \eqn{100(1-\alpha)\%} credible interval setting argument.
 #' @return \item{BetaSamples}{Samples from the posterior of the parameter
 #' \eqn{\beta}.}
 #' \item{LambdaSamples}{Lambda samples through rejection sampling.}
@@ -60,7 +63,7 @@
 #' y <- y + e
 #'
 #' # Run as default
-#' result <- exact_horseshoe(X, y, iteration = 1000)
+#' result <- exact_horseshoe(X, y, iter = 1000)
 #'
 #' # posterior mean
 #' post_mean <- apply(result$BetaSamples, MARGIN = 2, mean)
@@ -74,18 +77,19 @@
 #'                       quantile, probs = 0.975)}
 #'
 #' @export
-exact_horseshoe <- function(X, y, iter = 5000, a = 1/5, b = 10, s = 0.8,
-                            tau = 1, sigma2 = 1, w = 1) {
+exact_horseshoe <- function(X, y, burn = 1000, iter = 5000, a = 1/5, b = 10,
+                            s = 0.8, tau = 1, sigma2 = 1, w = 1, alpha = 0.05) {
   N <- nrow(X)
   p <- ncol(X)
   eta <- rep(1, p)
   xi <- tau^(-2)
   Q <- t(X) %*% X
-  betaout <- matrix(0, nrow = iteration, ncol = p)
-  etaout <- matrix(0, nrow = iteration, ncol = p)
-  xiout <- rep(0, iteration)
-  sigma2out <- rep(0, iteration)
-  for(i in 1:iteration) {
+  nmc <- burn + iter
+  betaout <- matrix(0, nrow = nmc, ncol = p)
+  etaout <- matrix(0, nrow = nmc, ncol = p)
+  xiout <- rep(0, nmc)
+  sigma2out <- rep(0, nmc)
+  for(i in 1:nmc) {
     log_xi <- stats::rnorm(1, mean = log(xi), sd = sqrt(s))
     new_xi <- exp(log_xi)
     if (p < N) {
@@ -163,9 +167,22 @@ exact_horseshoe <- function(X, y, iter = 5000, a = 1/5, b = 10, s = 0.8,
     eta <- rejection_sampler((new_beta^2) * xi / (2 * sigma2), a, b)
     eta <- ifelse(eta <= 2.220446e-16, 2.220446e-16, eta)
   }
-  result <- list(BetaSamples = betaout,
-                 LambdaSamples = 1 / sqrt(etaout),
-                 TauSamples = 1 / sqrt(xiout),
-                 Sigma2Samples = sigma2out)
+  betaout <- betaout[(burn+1):nmc, ]
+  lambdaout <- 1/sqrt(etaout[(burn+1):nmc, ])
+  activeout <- activeout[(burn+1):nmc, ]
+  tauout <- 1/sqrt(xiout[(burn+1):nmc])
+  sigma2out <- sigma2out[(burn+1):nmc]
+  betahat <- apply(betaout, 2, mean)
+  lambdahat <- apply(lambdaout, 2, mean)
+  tauhat <- mean(tauout)
+  sigma2hat <- mean(sigma2out)
+  activemean <- sum(activeout)/nrow(activeout)
+  leftci <- apply(betaout, 2, stats::quantile, probs = alpha/2)
+  rightci <- apply(betaout, 2, stats::quantile, probs = 1-alpha/2)
+  result <- list(BetaHat = betahat, LeftCI = leftci, RightCI = rightci,
+                 Sigma2Hat = sigma2hat, TauHat = tauhat, LambdaHat = lambdahat,
+                 ActiveMean = activemean, BetaSamples = betaout,
+                 LambdaSamples = lambdaout, TauSamples = tauout,
+                 Sigma2Samples = sigma2out, ActiveSet = activeout)
   return(result)
 }

@@ -15,12 +15,12 @@ approx_horseshoe(
   s = 0.8,
   sigma2 = 1,
   w = 1,
+  alpha = 0.05,
   a = 0.2,
   b = 10,
   t = 10,
   adapt_p0 = 0,
-  adapt_p1 = -4.6 * 10^(-4),
-  alpha = 0.05
+  adapt_p1 = -4.6 * 10^(-4)
 )
 }
 \arguments{
@@ -28,15 +28,19 @@ approx_horseshoe(
 
 \item{y}{Response vector, \eqn{y \in \mathbb{R}^{N}}.}
 
-\item{iter}{Number of samples to be drawn from the posterior.}
+\item{burn}{Number of burn-in samples. Default is 1000.}
+
+\item{iter}{Number of samples to be drawn from the posterior. Default is
+5000.}
 
 \item{auto.threshold}{Argument for setting whether to use an algorithm that
 automatically updates the threshold using adaptive probability.}
 
 \item{threshold}{Threshold to be used in the approximate MCMC algorithm.
-If you select 0(this is the default), the default is set according to the
+If you select auto.threshold = FALSE, and threshold = 0(This is the default
+value for the threshold argument), the threshold is set according to the
 sizes of N and p. if \eqn{p < N}, \eqn{\delta = 1/\sqrt{Np}}, else
-\eqn{\delta = 1/p}. Or, you can set the value directly through this
+\eqn{\delta = 1/p}. Or, you can set your custom value directly through this
 argument. For more information about \eqn{\delta}, see
 \code{\link{Mhorseshoe}} and 4.1 of Johndrow et al. (2020).}
 
@@ -49,9 +53,11 @@ the user. 0.8 is a good default. If set to 0, the algorithm proceeds by
 fixing the global shrinkage parameter \eqn{\tau} to the initial setting
 value.}
 
-\item{sigma2}{Default for error variance \eqn{\sigma^{2}} is 1.}
+\item{sigma2}{error variance \eqn{\sigma^{2}}. Default is 1.}
 
 \item{w}{Parameter of gamma prior for \eqn{\sigma^{2}}. Default is 1.}
+
+\item{alpha}{\eqn{100(1-\alpha)\%} credible interval setting argument.}
 
 \item{a}{Parameter of the rejection sampler, and it is recommended to leave
 it at the default value, \eqn{a = 1/5}.}
@@ -59,19 +65,21 @@ it at the default value, \eqn{a = 1/5}.}
 \item{b}{Parameter of the rejection sampler, and it is recommended to leave
 it at the default value, \eqn{b = 10}.}
 
-\item{t}{Threshold update cycle for adaptive probability method when
+\item{t}{Threshold update cycle for adaptive probability algorithm when
 auto.threshold is set to TRUE. default is 10.}
 
 \item{adapt_p0}{Parameter \eqn{p_{0}} of adaptive probability,
-\eqn{p(t) = exp[p_{0} + p_{1}t]}. default is 0.}
+\eqn{p(t) = exp[p_{0} + p_{1}t]}. default is \eqn{0}.}
 
 \item{adapt_p1}{Parameter \eqn{a_{1}} of adaptive probability,
 \eqn{p(t) = exp[p_{0} + p_{1}t]}. default is \eqn{-4.6 \times 10^{-4}}.}
 }
 \value{
 \item{BetaHat}{Posterior mean of \eqn{\beta}.}
-\item{LeftCI}{Lower bound of credible interval for \eqn{\beta}.}
-\item{RightCI}{Upper bound of credible interval for \eqn{\beta}.}
+\item{LeftCI}{Lower bound of \eqn{100(1-\alpha)\%} credible interval for
+\eqn{\beta}.}
+\item{RightCI}{Upper bound of \eqn{100(1-\alpha)\%} credible interval for
+\eqn{\beta}.}
 \item{Sigma2Hat}{Posterior mean of \eqn{\sigma^{2}}.}
 \item{TauHat}{Posterior mean of \eqn{\tau}.}
 \item{LambdaHat}{Posterior mean of \eqn{\lambda_{j},\ j=1,2,...p.}.}
@@ -96,20 +104,34 @@ horseshoe estimator. According to Section 3.2 of Johndrow et al. (2020), the
 approximate MCMC algorithm applying the methodology constructs an
 approximate Markov chain \eqn{P_{\epsilon}} that can converge to an exact
 Markov chain \eqn{P}, and acceptable results were confirmed through
-empirical analysis of simulation and real data.
+empirical analysis of simulation and real data. The "auto.threshold"
+argument in this function is an adaptive probability algorithm for threshold
+developed in this package, which is an algorithm that estimates and updates
+a new threshold through updated shrinkage parameters.
 }
 \details{
-This algorithm has the following changes compared to the exact algorithm:
+Approximate algorithm has the following changes:
 
 \deqn{D_{\delta} = diag\left(\eta_{j}^{-1}1\left(\xi^{-1}\eta_{j}^{-1}
 > \delta,\ j=1,2,...,p. \right) \right),}
-\deqn{M_{\xi} \approx M_{\xi, \delta} = I_{N} + \xi^{-1}XD_{\delta}X^{T}.}
+\deqn{M_{\xi} \approx M_{\xi, \delta} = I_{N} + \xi^{-1}XD_{\delta}X^{T},}
 
-The set of columns that satisfies the condition(\eqn{\xi^{-1}\eta_{j}^{-1}
-> \delta}) is defined as the active set, and let's define \eqn{S} as the
-index set of the following columns.
+Where \eqn{\eta_{j} = \lambda_{j}^{-2}}, \eqn{\lambda_{j}}
+are local shrinkage parameters, \eqn{\xi = \tau^{-2}}, \eqn{\tau} is a
+global shrinkage parameter, \eqn{1(\cdot)} is an indicator function that
+returns \eqn{1} if the conditions in the parentheses are satisfied, and
+\eqn{0} otherwise, and \eqn{\delta} is the threshold. The set of
+X's columns: \eqn{\{x_{j}\ :\ \xi^{-1}\eta_{j}^{-1} > \delta,\ j = 1,2,...,
+p \}} is defined as the active set, and let's define \eqn{S} as the
+index set of the active set:
 
 \deqn{S = \{j\ |\ \xi^{-1}\eta_{j}^{-1} > \delta,\ j=1,2,...,p. \}.}
+
+Recalling the posterior distribution for beta, it is as follows:
+
+\deqn{\beta | y, X, \eta, \xi, \sigma \sim
+N\left(\left(X^{T}X + \left(\xi D \right)^{-1}\right)^{-1}X^{T}y,
+\ \sigma^{2}\left(X^{T}X + \left(\xi D \right)^{-1} \right)^{-1} \right).}
 
 If \eqn{\xi^{-1}\eta_{j}^{-1}} is very small, the posterior of \eqn{\beta}
 will have a mean and variance close to 0. Therefore, let's set
@@ -134,6 +156,13 @@ from the posterior using fast sampling(Bhattacharya et al.,2016) as follows.
 v = Xu + f,\quad v^{\star} = M_{\xi, \delta}^{-1}(y/\sigma - v), \\
 \beta = \sigma(u + \xi^{-1}D_{\delta}X^{T}v^{\star}).}
 }
+\section{Adaptive probability algorithm for threshold update}{
+
+If the auto.threshold argument is set to TRUE, the algorithm operates
+every \eqn{t} iteration to estimate the threshold and decide whether to
+update.
+}
+
 \examples{
 # Making simulation data.
 set.seed(123)
@@ -154,10 +183,14 @@ for (i in 1:10) {
 y <- y + e
 
 # Run with auto.threshold option
-result <- approx_horseshoe(X, y, iteration = 1000)
+result1 <- approx_horseshoe(X, y, iter = 100)
 
-# Run with fixed threshold
-# result <- approx_horseshoe(X, y, iteration = 1000, auto.threshold = FALSE)
+# Run with fixed default threshold
+result2 <- approx_horseshoe(X, y, iter = 100, auto.threshold = FALSE)
+
+# Run with fixed, custom thresholds
+result3 <- approx_horseshoe(X, y, iter = 100,
+                            auto.threshold = FALSE, threshold = 1/(2 * p))
 
 # posterior mean
 betahat <- result$BetaHat

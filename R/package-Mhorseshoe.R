@@ -100,7 +100,7 @@
 #'
 #' @keywords internal
 #' @useDynLib Mhorseshoe, .registration = TRUE
-#' @importFrom Rcpp sourceCpp evalCpp
+#' @importFrom Rcpp sourceCpp
 #' @import stats
 #' @docType package
 #' @name Mhorseshoe

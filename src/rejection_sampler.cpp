@@ -1,6 +1,8 @@
 #include <Rcpp.h>
 using namespace Rcpp;
 
+//' rejection sampler to update local shrinkage parameters lambda.
+//' @keywords internal
 // [[Rcpp::export]]
 NumericVector rejection_sampler(NumericVector eps, double a, double b){
   int p = eps.length();

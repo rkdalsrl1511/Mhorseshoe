@@ -39,7 +39,7 @@ value.}
 starting the algorithm. If argument \eqn{s} is set to 0 and this argument
 is set, analysis of a fixed \eqn{\tau} is performed. Default is 1.}
 
-\item{sigma2}{Default for error variance \eqn{\sigma^{2}} is 1.}
+\item{sigma2}{error variance \eqn{\sigma^{2}}. Default is 1.}
 
 \item{w}{Parameter of gamma prior for \eqn{\sigma^{2}}. Default is 1.}
 

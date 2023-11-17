@@ -7,13 +7,15 @@
 exact_horseshoe(
   X,
   y,
+  burn = 1000,
   iter = 5000,
   a = 1/5,
   b = 10,
   s = 0.8,
   tau = 1,
   sigma2 = 1,
-  w = 1
+  w = 1,
+  alpha = 0.05
 )
 }
 \arguments{
@@ -21,7 +23,10 @@ exact_horseshoe(
 
 \item{y}{Response vector, \eqn{y \in \mathbb{R}^{N}}.}
 
-\item{iter}{Number of samples to be drawn from the posterior.}
+\item{burn}{Number of burn-in samples. Default is 1000.}
+
+\item{iter}{Number of samples to be drawn from the posterior. Default is
+5000.}
 
 \item{a}{Parameter of the rejection sampler, and it is recommended to leave
 it at the default value, \eqn{a = 1/5}.}
@@ -38,9 +43,11 @@ value.}
 starting the algorithm. If argument \eqn{s} is set to 0 and this argument
 is set, analysis of a fixed \eqn{\tau} is performed. Default is 1.}
 
-\item{sigma2}{Default for error variance \eqn{\sigma^{2}} is 1.}
+\item{sigma2}{error variance \eqn{\sigma^{2}}. Default is 1.}
 
 \item{w}{Parameter of gamma prior for \eqn{\sigma^{2}}. Default is 1.}
+
+\item{alpha}{\eqn{100(1-\alpha)\%} credible interval setting argument.}
 }
 \value{
 \item{BetaSamples}{Samples from the posterior of the parameter
@@ -85,7 +92,7 @@ for (i in 1:50) {
 y <- y + e
 
 # Run as default
-result <- exact_horseshoe(X, y, iteration = 1000)
+result <- exact_horseshoe(X, y, iter = 1000)
 
 # posterior mean
 post_mean <- apply(result$BetaSamples, MARGIN = 2, mean)
