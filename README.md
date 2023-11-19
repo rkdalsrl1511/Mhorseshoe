@@ -6,19 +6,12 @@ Mhorseshoe is a package for a high-dimensional Bayesian linear modeling
 algorithm using a horseshoe prior. A feature of this package is that it 
 implements approximate MCMC algorithm from Johndrow et al. (2020) and provides 
 a horseshoe estimator that can effectively reduce computational costs for 
-high-dimensional sparse data. This package provides three different algorithm 
+high-dimensional sparse data. This package provides two different algorithm 
 functions :
 
--`exact_horseshoe()` Run the horseshoe estimator assuming a linear model.
+-`exact_horseshoe()` Run the horseshoe estimator.
 
 -`approx_horseshoe()` Run the horseshoe estimator with the approximate algorithm applied.
-
--`mapprox_horseshoe()` Run the horseshoe estimator, which estimates and updates the threshold of the approximate algorithm.
-
-mapprox_horseshoe updates parameters in the same way as approx_horseshoe, but while 
-approx_horseshoe uses a fixed value as the threshold of the approximation algorithm, 
-mapprox_horseshoe adds a new threshold update process. More information about these 
-can be found in `vignette("Mhorseshoe")`.
 
 ## Installation
 
@@ -38,17 +31,19 @@ $$L(y\ |\ x, \beta, \sigma^2) = (\frac{1}{\sqrt{2\pi}\sigma})^{-N/2}exp
 - $y \in \mathbb{R}^{N}$ : Response variable.
 
 ```r
-# Run functions from the Mhorseshoe package with default settings
-result <- exact_horseshoe(X, y, iteration = 5000)
-result <- approx_horseshoe(X, y, iteration = 5000)
-result <- mapprox_horseshoe(X, y, iteration = 5000)
+# Run functions from the Mhorseshoe package
+ex_result <- exact_horseshoe(X, y, burn = 5000, iter = 10000)
+ap_result <- approx_horseshoe(X, y, burn = 5000, iter = 10000)
 
-# posterior mean(burn-in = 1000)
-post_mean <- apply(result$BetaSamples[1001:5000, ], MARGIN = 2, mean)
+# posterior mean of beta
+ex_betahat <- ex_result$BetaHat
+ap_betahat <- ap_result$BetaHat
 
-# 95% posterior credible intervals(burn-in = 1000)
-post_leftCI <- apply(result$BetaSamples[1001:5000, ], MARGIN = 2, quantile, probs = 0.025)
-post_rightCI <- apply(result$BetaSamples[1001:5000, ], MARGIN = 2, quantile, probs = 0.975)
+# 95% posterior credible intervals
+ex_LeftCI <- ex_result$LeftCI
+ex_RightCI <- ex_result$RightCI
+ap_LeftCI <- ap_result$LeftCI
+ap_RightCI <- ap_result$RightCI
 ```
 
 ## References
