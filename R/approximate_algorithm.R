@@ -15,6 +15,8 @@
 #' developed in this package, which is an algorithm that estimates and updates
 #' a new threshold through updated shrinkage parameters.
 #'
+#' @section Approximate algorithm details:
+#'
 #' Approximate algorithm has the following changes:
 #'
 #' \deqn{D_{\delta} = diag\left(\eta_{j}^{-1}1\left(\xi^{-1}\eta_{j}^{-1}
@@ -35,10 +37,11 @@
 #' Recalling the posterior distribution for \eqn{\beta}, it is as follows:
 #'
 #' \deqn{\beta | y, X, \eta, \xi, \sigma \sim
-#' N\left(\left(X^{T}X + \left(\xi D \right)^{-1}\right)^{-1}X^{T}y,
-#' \ \sigma^{2}\left(X^{T}X + \left(\xi D \right)^{-1} \right)^{-1} \right).}
+#' N\left(\left(X^{T}X + \left(\xi^{-1} D \right)^{-1}\right)^{-1}X^{T}y,
+#' \ \sigma^{2}\left(X^{T}X + \left(\xi^{-1} D \right)^{-1} \right)^{-1}
+#' \right).}
 #'
-#' If \eqn{\xi \eta_{j}} is very small, the posterior of \eqn{\beta}
+#' If \eqn{\xi^{-1} \eta_{j}^{-1}} is very small, the posterior of \eqn{\beta}
 #' will have a mean and variance close to 0. Therefore, let's set
 #' \eqn{\xi^{-1}\eta_{j}^{-1}} smaller than \eqn{\delta} to 0 and the size of
 #' inverse \eqn{M_{\xi, \delta}} matrix is reduced as follows.
@@ -62,9 +65,36 @@
 #' \beta = \sigma(u + \xi^{-1}D_{\delta}X^{T}v^{\star}).}
 #'
 #' @section Adaptive probability algorithm for threshold update:
-#' If the auto.threshold argument is set to TRUE, the algorithm operates
+#' If the auto.threshold argument is set to TRUE, this algorithm operates
 #' every \eqn{t} iteration to estimate the threshold and decide whether to
-#' update.
+#' update. In this algorithm, the process of updating a new threshold is added
+#' by applying the properties of the shrinkage weight \eqn{k_{j},\ j=1,2,...,p}
+#' proposed by Piironen and Vehtari (2017). In the prior of \eqn{\beta_{j} \sim
+#' N(0, \sigma^{2}\tau^{2}\lambda_{j}^{2}) = N(0, \sigma^{2}\xi^{-1}
+#' \eta_{j}^{-1})}, the variable \eqn{m_{eff}} is defined as follows.
+#'
+#' \deqn{k_{j} = 1/\left(1+n\xi^{-1}s_{j}^{2}\eta_{j}^{-1} \right),
+#' \quad j=1,2,...,p, \\ m_{eff} = \sum_{j=1}^{p}{\left(1-k_{j} \right)}.}
+#'
+#' The assumptions and notations for the model are the same as those in
+#' \code{\link{Mhorseshoe}}, and \eqn{s_{j},\ j=1,2,...,p} are the diagonal
+#' components of \eqn{X^{T}X}. For the zero components of \eqn{\beta},
+#' \eqn{k_{j}} is derived close to 1, and nonzero's \eqn{k_{j}} is derived
+#' close to 0, so the variable \eqn{m_{eff}}, the sum of \eqn{1-k_{j}}, is
+#' called the effective number of nonzero coefficients. In this algorithm, the
+#' threshold \eqn{\delta} is updated to set
+#' \eqn{s_{\delta} = ceiling(m_{eff})}.
+#'
+#' Adaptive probability is defined to satisfy
+#' Theorem 5(diminishing adaptation condition) of Roberts and Rosenthal (2007).
+#' at \eqn{T}th iteration,
+#'
+#' \deqn{p(T) = exp[p_{0} + p_{1}T],\quad p_{1} < 0,
+#' \quad u \sim U(0, 1), \\ if\ u < p(T),\ update\ \delta\ so\ that\
+#' s_{\delta} = ceiling(m_{eff}).}
+#'
+#' The default is \eqn{p_{0} = 0}, \eqn{p_{1} = -4.6 \times 10^{-4}}, and
+#' under this condition, \eqn{p(10000) < 0.01} is satisfied.
 #'
 #' @references Bhattacharya, A., Chakraborty, A., & Mallick, B. K. (2016).
 #' Fast sampling with Gaussian scale mixture priors in high-dimensional
@@ -73,6 +103,13 @@
 #' Johndrow, J., Orenstein, P., & Bhattacharya, A. (2020).
 #' Scalable Approximate MCMC Algorithms for the Horseshoe Prior. In Journal
 #' of Machine Learning Research (Vol. 21).
+#'
+#' Piironen, J., & Vehtari, A. (2017). Sparsity information and regularization
+#' in the horseshoe and other shrinkage priors. Electronic Journal of
+#' Statistics, 11, 5018-5051.
+#'
+#' Roberts G, Rosenthal J. Coupling and ergodicity of adaptive Markov chain
+#' Monte Carlo algorithms. J Appl Prob. 2007;44:458–475.
 #'
 #' @inheritParams exact_horseshoe
 #' @param auto.threshold Argument for setting whether to use an algorithm that
@@ -139,13 +176,13 @@
 #'                             auto.threshold = FALSE, threshold = 1/(2 * p))
 #'
 #' # posterior mean
-#' betahat <- result$BetaHat
+#' betahat <- result1$BetaHat
 #'
 #' # Lower bound of the 95% credible interval
-#' leftCI <- result$LeftCI
+#' leftCI <- result1$LeftCI
 #'
 #' # Upper bound of the 95% credible interval
-#' RightCI <- result$RightCI
+#' RightCI <- result1$RightCI
 #'
 #' @export
 approx_horseshoe <- function(X, y, burn = 1000, iter = 5000,
@@ -167,8 +204,8 @@ approx_horseshoe <- function(X, y, burn = 1000, iter = 5000,
   } else if (threshold == 0) {
     threshold <- ifelse(p >= N, 1/p, 1/sqrt(N*p))
     message("You chose FALSE for the auto.threshold argument. ",
-            "but since threshold = 0 is set, it is reset to ",
-            "threshold = ", threshold, ".")
+            "and since threshold = 0, set it to the default value of ",
+            threshold, ".")
   }
   betaout <- matrix(0, nrow = nmc, ncol = p)
   etaout <- matrix(0, nrow = nmc, ncol = p)

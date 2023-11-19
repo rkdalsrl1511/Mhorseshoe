@@ -17,8 +17,8 @@ library(ggplot2)
 library(horseshoe)
 ```
 
-In this vignette, the functions exact_horseshoe, approx_horseshoe, and 
-mapprox_horseshoe are explained in the following sections.
+In this vignette, the functions exact_horseshoe, approx_horseshoe are explained 
+in the following sections.
 
 1. About the horseshoe estimator in this package
 2. Brief Description of approximate MCMC algorithm
@@ -28,7 +28,7 @@ mapprox_horseshoe are explained in the following sections.
 The horseshoe prior is a continuous reduced prior distribution frequently used 
 in high-dimensional Bayesian linear models, and can be effectively applied to 
 sparse data. This is a method that theoretically guarantees excellent shrinkage 
-properties. This package provides an estimator applying the horseshoe prior,The 
+properties. Mhorseshoe provides an estimator applying the horseshoe prior, The 
 likelihood function of the Gaussian linear model to be considered in this 
 package is as follows:
 
@@ -69,8 +69,8 @@ $$log(\xi^{\star}) \sim N(log(\xi), s), accept\ \xi \ w.p.\
 3. Sample $\sigma^{2}$, $$\sigma^{2} | y, X, \eta, \xi \sim
 InvGamma\{(w + N) / 2, (w + y^{T}M_{\xi}^{-1}y) / 2 \}.$$
 4. Sample $\beta$, $$\beta | y, X, \eta, \xi, \sigma \sim
-N\left(\left(X^{T}X + \left(\xi D \right)^{-1}\right)^{-1}X^{T}y,
-\ \sigma^{2}\left(X^{T}X + \left(\xi D \right)^{-1} \right)^{-1} \right).$$
+N\left(\left(X^{T}X + \left(\xi^{-1} D \right)^{-1}\right)^{-1}X^{T}y,
+\ \sigma^{2}\left(X^{T}X + \left(\xi^{-1} D \right)^{-1} \right)^{-1} \right).$$
 
 Since the algorithm of this package considers the case of $p >> N$, the 
 computational cost can be lowered by sampling $\beta$ using fast 
@@ -203,11 +203,14 @@ mapprox_horseshoe functions of this package. The approx_horseshoe uses a fixed
 $\delta$, while the mapprox_horseshoe uses an algorithm that updates $\delta$ 
 using adaptive probability.
 
-### mapprox_horseshoe function
+### modified approximate algorithm
 
-In this algorithm, the process of updating a new threshold is added by
-applying the properties of the shrinkage weight $k_{j},\ j=1,2,...,p$
-proposed by Piironen and Vehtari (2017). In the prior of $\beta_{j} \sim N(0, \sigma^{2}\tau^{2}\lambda_{j}^{2}) = N(0, \sigma^{2}\xi^{-1} \eta_{j}^{-1})$, 
+The modified approximate algorithm developed in this package estimates new 
+threshold through updated shrinkage parameters and adds an adaptive probability 
+algorithm that updates the threshold. the process of updating a new threshold 
+is added by applying the properties of the shrinkage weight 
+$k_{j},\ j=1,2,...,p$ proposed by Piironen and Vehtari (2017). In the prior of
+$\beta_{j} \sim N(0, \sigma^{2}\tau^{2}\lambda_{j}^{2}) = N(0, \sigma^{2}\xi^{-1}\eta_{j}^{-1})$,
 the variable $m_{eff}$ is defined as follows.
 
 $$k_{j} = 1/\left(1+n\xi^{-1}s_{j}^{2}\eta_{j}^{-1} \right),
@@ -222,11 +225,11 @@ set $s_{\delta} = ceiling(m_{eff})$.
 Adaptive probability is defined to satisfy Theorem 5(diminishing adaptation 
 condition) of Roberts and Rosenthal (2007). at $T$th iteration,
 
-$$p(T) = exp[a_{0} + a_{1}T],\quad a_{1} < 0,
+$$p(T) = exp[p_{0} + p_{1}T],\quad p_{1} < 0,
 \quad u \sim U(0, 1), \\ if\ u < p(T),\ update\ \delta\ so\ that\
 s_{\delta} = ceiling(m_{eff}).$$
 
-The default is $a_{0} = 0$, $a_{1} = -4.6 \times 10^{-4}$, and 
+The default is $p_{0} = 0$, $p_{1} = -4.6 \times 10^{-4}$, and 
 under this condition, $p(10000) < 0.01$ is satisfied.
 
 ```{r fig.width = 6, fig.height= 4}
@@ -266,11 +269,11 @@ ggplot(data = df2, aes(x = index, y = true_beta)) +
        y = "beta")
 ```
 
-In the case of exact_horseshoe in the simulation data, since the $D$ is used as 
-is, it can always be thought of as $length(S) = 500$. On the other hand, since 
-the method of setting the threshold is different in approx_horseshoe and 
-modified_approx_horseshoe, a difference occurs in $length(S) = s_{\delta}$, 
-which causes a difference in the calculation speed of the algorithm.
+In the case of exact_horseshoe, since the $D$ is used as is, it can always be 
+thought of as $length(S) = 500$. On the other hand, since the method of setting 
+the threshold is different in approx_horseshoe and modified approx_horseshoe, a 
+difference occurs in $length(S) = s_{\delta}$, which causes a difference in the 
+calculation speed of the algorithm.
 
 ```{r fig.width = 6, fig.height= 4}
 exact_activeset <- rep(p, 500)

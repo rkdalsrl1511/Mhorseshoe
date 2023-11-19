@@ -7,14 +7,13 @@
 \title{Mhorseshoe: Approximate Algorithm for Horseshoe Prior}
 \description{
 Mhorseshoe is a package for a high-dimensional Bayesian linear
-modeling algorithm using a horseshoe prior. This package provides three
+modeling algorithm using a horseshoe prior. This package provides two
 different algorithm functions : \code{\link{exact_horseshoe}},
-\code{\link{approx_horseshoe}}, \code{\link{mapprox_horseshoe}}.
-approx_horseshoe and mapprox_horseshoe are versions that can lower the
-computational cost than the existing horseshoe estimator through the
+\code{\link{approx_horseshoe}}. approx_horseshoe is version that can lower
+the computational cost than the existing horseshoe estimator through the
 approximate MCMC algorithm in the case of \eqn{p >> N} for \eqn{p}
 predictors and \eqn{N} observations. You can see examples of the use of the
-three algorithms through the vignette, \code{browseVignettes("Mhorseshoe")}.
+two algorithms through the vignette, \code{browseVignettes("Mhorseshoe")}.
 }
 \section{About the horseshoe estimator in this package}{
 
@@ -43,7 +42,8 @@ is that the computational cost is large for high-dimensional data where
 \eqn{p>>n}, and the computation of the algorithm is very slow. To overcome
 these limitations, Johndrow et al. (2020) proposed a scalable approximate
 MCMC algorithm that can reduce computational costs by introducing a
-thresholding method while applying the horseshoe prior.
+thresholding method while applying the horseshoe prior. This approximate
+algorithm is implemented in \code{\link{approx_horseshoe}} of this package.
 }
 
 \section{Exact algorithm process}{
@@ -66,8 +66,9 @@ following posterior of \eqn{\eta_{j}} for rejection sampling.
 \item Sample \eqn{\sigma^{2}}, \deqn{\sigma^{2} | y, X, \eta, \xi \sim
 InvGamma\{(w + N) / 2, (w + y^{T}M_{\xi}^{-1}y) / 2 \}.}
 \item Sample \eqn{\beta}, \deqn{\beta | y, X, \eta, \xi, \sigma \sim
-N\left(\left(X^{T}X + \left(\xi D \right)^{-1}\right)^{-1}X^{T}y,
-\ \sigma^{2}\left(X^{T}X + \left(\xi D \right)^{-1} \right)^{-1} \right).}
+N\left(\left(X^{T}X + \left(\xi^{-1} D \right)^{-1}\right)^{-1}X^{T}y,
+\ \sigma^{2}\left(X^{T}X + \left(\xi^{-1} D \right)^{-1} \right)^{-1}
+\right).}
 }
 
 Since the algorithm of this package considers the case of \eqn{p >> N},
@@ -96,10 +97,7 @@ If a \eqn{D_{\delta}} matrix is used instead of a \eqn{D} matrix, rows and
 columns with diagonal components of 0 can be eliminated, thus reducing the
 computational cost for matrix multiplication. This is called the
 approximate MCMC algorithm and is implemented in
-\code{\link{approx_horseshoe}} and \code{\link{mapprox_horseshoe}}. While
-approx_horseshoe applies a fixed threshold, mapprox_horseshoe estimates the
-effective value and updates the threshold through an adaptive
-probability method.
+\code{\link{approx_horseshoe}}.
 }
 
 \references{
