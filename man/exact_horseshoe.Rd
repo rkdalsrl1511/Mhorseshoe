@@ -34,14 +34,13 @@ it at the default value, \eqn{a = 1/5}.}
 \item{b}{Parameter of the rejection sampler, and it is recommended to leave
 it at the default value, \eqn{b = 10}.}
 
-\item{s}{\eqn{s^{2}} is the variance of the MH proposal distribution set by
-the user. 0.8 is a good default. If set to 0, the algorithm proceeds by
+\item{s}{\eqn{s^{2}} is the variance of tau's MH proposal distribution.
+0.8 is a good default. If set to 0, the algorithm proceeds by
 fixing the global shrinkage parameter \eqn{\tau} to the initial setting
 value.}
 
 \item{tau}{Initial value of the global shrinkage parameter \eqn{\tau} when
-starting the algorithm. If argument \eqn{s} is set to 0 and this argument
-is set, analysis of a fixed \eqn{\tau} is performed. Default is 1.}
+starting the algorithm. Default is 1.}
 
 \item{sigma2}{error variance \eqn{\sigma^{2}}. Default is 1.}
 
@@ -50,15 +49,19 @@ is set, analysis of a fixed \eqn{\tau} is performed. Default is 1.}
 \item{alpha}{\eqn{100(1-\alpha)\%} credible interval setting argument.}
 }
 \value{
-\item{BetaSamples}{Samples from the posterior of the parameter
+\item{BetaHat}{Posterior mean of \eqn{\beta}.}
+\item{LeftCI}{Lower bound of \eqn{100(1-\alpha)\%} credible interval for
 \eqn{\beta}.}
+\item{RightCI}{Upper bound of \eqn{100(1-\alpha)\%} credible interval for
+\eqn{\beta}.}
+\item{Sigma2Hat}{Posterior mean of \eqn{\sigma^{2}}.}
+\item{TauHat}{Posterior mean of \eqn{\tau}.}
+\item{LambdaHat}{Posterior mean of \eqn{\lambda_{j},\ j=1,2,...p.}.}
+\item{BetaSamples}{Samples from the posterior of \eqn{\beta}.}
 \item{LambdaSamples}{Lambda samples through rejection sampling.}
 \item{TauSamples}{Tau samples through MH algorithm.}
 \item{Sigma2Samples}{Samples from the posterior of the parameter
 \eqn{sigma^{2}}.}
-\item{ActiveSamples}{Samples recording the number of columns that satisfy
-condition \eqn{\tau^{2}\lambda^{2}_{j} > \delta,\ j=1,2,...,p} in this
-algorithm.}
 }
 \description{
 The exact MCMC algorithm introduced in Section 2.1 of Johndrow et al. (2020)
@@ -72,12 +75,11 @@ Metropolis-Hastings algorithm, and uses blocked-Gibbs sampling for
 See \code{\link{Mhorseshoe}} or browseVignettes("Mhorseshoe").
 }
 \examples{
-\dontrun{
 # Making simulation data.
 set.seed(123)
-N <- 100
-p <- 200
-true_beta <- c(rep(1, 10), rep(0, 190))
+N <- 50
+p <- 100
+true_beta <- c(rep(1, 10), rep(0, 90))
 
 X <- matrix(1, nrow = N, ncol = p) # Design matrix X.
 for (i in 1:p) {
@@ -86,24 +88,22 @@ for (i in 1:p) {
 
 y <- vector(mode = "numeric", length = N) # Response variable y.
 e <- rnorm(N, mean = 0, sd = 2) # error term e.
-for (i in 1:50) {
+for (i in 1:10) {
   y <- y + true_beta[i] * X[, i]
 }
 y <- y + e
 
-# Run as default
-result <- exact_horseshoe(X, y, iter = 1000)
+# Run
+result <- exact_horseshoe(X, y, burn = 0, iter = 100)
 
 # posterior mean
-post_mean <- apply(result$BetaSamples, MARGIN = 2, mean)
+betahat <- result$BetaHat
 
 # Lower bound of the 95\% credible interval
-post_leftCI <- apply(result$BetaSamples, MARGIN = 2,
-                     quantile, probs = 0.025)
+leftCI <- result$LeftCI
 
 # Upper bound of the 95\% credible interval
-post_rightCI <- apply(result$BetaSamples, MARGIN = 2,
-                      quantile, probs = 0.975)}
+RightCI <- result$RightCI
 
 }
 \references{

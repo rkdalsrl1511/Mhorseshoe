@@ -30,14 +30,13 @@ it at the default value, \eqn{a = 1/5}.}
 \item{b}{Parameter of the rejection sampler, and it is recommended to leave
 it at the default value, \eqn{b = 10}.}
 
-\item{s}{\eqn{s^{2}} is the variance of the MH proposal distribution set by
-the user. 0.8 is a good default. If set to 0, the algorithm proceeds by
+\item{s}{\eqn{s^{2}} is the variance of tau's MH proposal distribution.
+0.8 is a good default. If set to 0, the algorithm proceeds by
 fixing the global shrinkage parameter \eqn{\tau} to the initial setting
 value.}
 
 \item{tau}{Initial value of the global shrinkage parameter \eqn{\tau} when
-starting the algorithm. If argument \eqn{s} is set to 0 and this argument
-is set, analysis of a fixed \eqn{\tau} is performed. Default is 1.}
+starting the algorithm. Default is 1.}
 
 \item{sigma2}{error variance \eqn{\sigma^{2}}. Default is 1.}
 

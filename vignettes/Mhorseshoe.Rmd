@@ -125,38 +125,32 @@ horseshoe_result <- horseshoe::horseshoe(y, X, method.tau = "halfCauchy",
                                          burn = 0, nmc = 500)
 
 # exact_horseshoe.
-exact_horseshoe_result <- exact_horseshoe(X, y, iteration = 500)
-exact_horseshoe_postmean <- apply(exact_horseshoe_result$BetaSamples, 
-                                  MARGIN = 2, mean)
-exact_horseshoe_leftCI <- apply(exact_horseshoe_result$BetaSamples, 
-                                MARGIN = 2, quantile, probs = 0.025)
-exact_horseshoe_rightCI <- apply(exact_horseshoe_result$BetaSamples,
-                                 MARGIN = 2, quantile, probs = 0.975)
+exact_horseshoe_result <- exact_horseshoe(X, y, burn = 0, iter = 500)
 
 df <- data.frame(index = 1:100,
-                 horseshoe_postmean = horseshoe_result$BetaHat[1:100],
-                 horseshoe_leftCI = horseshoe_result$LeftCI[1:100],
-                 horseshoe_rightCI = horseshoe_result$RightCI[1:100],
-                 exact_horseshoe_postmean = exact_horseshoe_postmean[1:100],
-                 exact_horseshoe_leftCI = exact_horseshoe_leftCI[1:100],
-                 exact_horseshoe_rightCI = exact_horseshoe_rightCI[1:100],
+                 horseshoe_BetaHat = horseshoe_result$BetaHat[1:100],
+                 horseshoe_LeftCI = horseshoe_result$LeftCI[1:100],
+                 horseshoe_RightCI = horseshoe_result$RightCI[1:100],
+                 exhorseshoe_BetaHat = exact_horseshoe_result$BetaHat[1:100],
+                 exhorseshoe_LeftCI = exact_horseshoe_result$LeftCI[1:100],
+                 exhorseshoe_RightCI = exact_horseshoe_result$RightCI[1:100],
                  true_beta = true_beta[1:100])
 
 # Estimation results of the horseshoe.
 ggplot(data = df, aes(x = index, y = true_beta)) + 
   geom_point(size = 2) + 
-  geom_point(aes(x = index, y = horseshoe_postmean), size = 2, col = "red") +
-  geom_errorbar(aes(ymin = horseshoe_leftCI, 
-                    ymax = horseshoe_rightCI), width = .1, col = "red") +
+  geom_point(aes(x = index, y = horseshoe_BetaHat), size = 2, col = "red") +
+  geom_errorbar(aes(ymin = horseshoe_LeftCI,
+                    ymax = horseshoe_RightCI), width = .1, col = "red") +
   labs(title = "95% Credible intervals of the horseshoe function", y = "beta")
 
 # Estimation results of the exact_horseshoe.
 ggplot(data = df, aes(x = index, y = true_beta)) + 
   geom_point(size = 2) + 
-  geom_point(aes(x = index, y = exact_horseshoe_postmean), 
+  geom_point(aes(x = index, y = exhorseshoe_BetaHat), 
              size = 2, col = "red") +
-  geom_errorbar(aes(ymin = exact_horseshoe_leftCI, 
-                    ymax = exact_horseshoe_rightCI), width = .1, col = "red") +
+  geom_errorbar(aes(ymin = exhorseshoe_LeftCI, 
+                    ymax = exhorseshoe_RightCI), width = .1, col = "red") +
   labs(title = "95% Credible intervals of the exact_horseshoe function",
        y = "beta")
 ```
@@ -236,76 +230,70 @@ The default is $a_{0} = 0$, $a_{1} = -4.6 \times 10^{-4}$, and
 under this condition, $p(10000) < 0.01$ is satisfied.
 
 ```{r fig.width = 6, fig.height= 4}
-# approx_horseshoe.
-approx_horseshoe_result <- approx_horseshoe(X, y, iteration = 500)
-approx_horseshoe_postmean <- apply(approx_horseshoe_result$BetaSamples,
-                                   MARGIN = 2, mean)
-approx_horseshoe_leftCI <- apply(approx_horseshoe_result$BetaSamples, 
-                                 MARGIN = 2, quantile, probs = 0.025)
-approx_horseshoe_rightCI <- apply(approx_horseshoe_result$BetaSamples, 
-                                  MARGIN = 2, quantile, probs = 0.975)
+# approx_horseshoe with fixed default threshold.
+approx_horseshoe_result <- approx_horseshoe(X, y, burn = 0, iter = 500, 
+                                            auto.threshold = FALSE)
 
-# mapprox_horseshoe.
-mapprox_horseshoe_result <- mapprox_horseshoe(X, y, iteration = 500)
-mapprox_horseshoe_postmean <- apply(mapprox_horseshoe_result$BetaSamples,
-                                    MARGIN = 2, mean)
-mapprox_horseshoe_leftCI <- apply(mapprox_horseshoe_result$BetaSamples,
-                                  MARGIN = 2, quantile, probs = 0.025)
-mapprox_horseshoe_rightCI <- apply(mapprox_horseshoe_result$BetaSamples, 
-                                   MARGIN = 2, quantile, probs = 0.975)
+# modified approx_horseshoe with adaptive probability algorithm.
+mapprox_horseshoe_result <- approx_horseshoe(X, y, burn = 0, iter = 500)
 
 df2 <- data.frame(index = 1:100,
-                  approx_horseshoe_postmean = approx_horseshoe_postmean[1:100],
-                  approx_horseshoe_leftCI = approx_horseshoe_leftCI[1:100],
-                  approx_horseshoe_rightCI = approx_horseshoe_rightCI[1:100],
-                  mapprox_horseshoe_postmean = mapprox_horseshoe_postmean[1:100],
-                  mapprox_horseshoe_leftCI = mapprox_horseshoe_leftCI[1:100],
-                  mapprox_horseshoe_rightCI = mapprox_horseshoe_rightCI[1:100],
+                  approx_BetaHat = approx_horseshoe_result$BetaHat[1:100],
+                  approx_LeftCI = approx_horseshoe_result$LeftCI[1:100],
+                  approx_RightCI = approx_horseshoe_result$RightCI[1:100],
+                  mapprox_BetaHat = mapprox_horseshoe_result$BetaHat[1:100],
+                  mapprox_LeftCI = mapprox_horseshoe_result$LeftCI[1:100],
+                  mapprox_RightCI = mapprox_horseshoe_result$RightCI[1:100],
                   true_beta = true_beta[1:100])
 
 # Estimation results of the approx_horseshoe.
 ggplot(data = df2, aes(x = index, y = true_beta)) + 
   geom_point(size = 2) + 
-  geom_point(aes(x = index, y = approx_horseshoe_postmean), size = 2, col = "red") +
-  geom_errorbar(aes(ymin = approx_horseshoe_leftCI, 
-                    ymax = approx_horseshoe_rightCI), width = .1, col = "red") +
+  geom_point(aes(x = index, y = approx_BetaHat), size = 2, col = "red") +
+  geom_errorbar(aes(ymin = approx_LeftCI, 
+                    ymax = approx_RightCI), width = .1, col = "red") +
   labs(title = "95% Credible intervals of the approx_horseshoe", y = "beta")
 
 # Estimation results of the mapprox_horseshoe.
 ggplot(data = df2, aes(x = index, y = true_beta)) + 
   geom_point(size = 2) + 
-  geom_point(aes(x = index, y = mapprox_horseshoe_postmean), 
+  geom_point(aes(x = index, y = mapprox_BetaHat), 
              size = 2, col = "red") +
-  geom_errorbar(aes(ymin = mapprox_horseshoe_leftCI, 
-                    ymax = mapprox_horseshoe_rightCI), width = .1, col = "red") +
-  labs(title = "95% Credible intervals of the mapprox_horseshoe", y = "beta")
+  geom_errorbar(aes(ymin = mapprox_LeftCI, 
+                    ymax = mapprox_RightCI), 
+                width = .1, col = "red") +
+  labs(title = "95% Credible intervals of the modified_approx_horseshoe", 
+       y = "beta")
 ```
 
 In the case of exact_horseshoe in the simulation data, since the $D$ is used as 
 is, it can always be thought of as $length(S) = 500$. On the other hand, since 
 the method of setting the threshold is different in approx_horseshoe and 
-mapprox_horseshoe, a difference occurs in $length(S) = s_{\delta}$, which 
-causes a difference in the calculation speed of the algorithm.
+modified_approx_horseshoe, a difference occurs in $length(S) = s_{\delta}$, 
+which causes a difference in the calculation speed of the algorithm.
 
 ```{r fig.width = 6, fig.height= 4}
-exact_horseshoe_activeset <- rep(p, 500)
-approx_horseshoe_activeset <- approx_horseshoe_result$ActiveSamples
-mapprox_horseshoe_activeset <- mapprox_horseshoe_result$ActiveSamples
+exact_activeset <- rep(p, 500)
+approx_activeset <- apply(approx_horseshoe_result$ActiveSet, MARGIN = 1, sum)
+mapprox_activeset <- apply(mapprox_horseshoe_result$ActiveSet, MARGIN = 1, sum)
 
 # active set plot
 ggplot(data = data.frame(X = 1:500,
-                         exact_horseshoe_activeset = exact_horseshoe_activeset,
-                         approx_horseshoe_activeset = approx_horseshoe_activeset,
-                         mapprox_horseshoe_activeset = mapprox_horseshoe_activeset)) +
-  geom_line(mapping = aes(x = X, y = exact_horseshoe_activeset, color = "exact")) +
-  geom_line(mapping = aes(x = X, y = approx_horseshoe_activeset, color = "approx"),
+                         exact_activeset = exact_activeset,
+                         approx_activeset = approx_activeset,
+                         mapprox_activeset = mapprox_activeset)) +
+  geom_line(mapping = aes(x = X, y = exact_activeset,
+                          color = "exact")) +
+  geom_line(mapping = aes(x = X, y = approx_activeset,
+                          color = "approx"),
             alpha = 0.5) +
-  geom_line(mapping = aes(x = X, y = mapprox_horseshoe_activeset, color = "mapprox"),
+  geom_line(mapping = aes(x = X, y = mapprox_activeset,
+                          color = "modified_approx"),
             alpha = 0.5) +
   scale_color_manual(name = "algorithm",
                      values = c("black", "red", "blue"), 
-                     breaks = c("exact", "approx", "mapprox"), 
-                     labels = c("exact", "approx", "mapprox"))
+                     breaks = c("exact", "approx", "modified_approx"), 
+                     labels = c("exact", "approx", "modified_approx"))
 ```
 
 # References

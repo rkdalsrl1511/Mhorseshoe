@@ -45,11 +45,10 @@ argument. For more information about \eqn{\delta}, see
 \code{\link{Mhorseshoe}} and 4.1 of Johndrow et al. (2020).}
 
 \item{tau}{Initial value of the global shrinkage parameter \eqn{\tau} when
-starting the algorithm. If argument \eqn{s} is set to 0 and this argument
-is set, analysis of a fixed \eqn{\tau} is performed. Default is 1.}
+starting the algorithm. Default is 1.}
 
-\item{s}{\eqn{s^{2}} is the variance of the MH proposal distribution set by
-the user. 0.8 is a good default. If set to 0, the algorithm proceeds by
+\item{s}{\eqn{s^{2}} is the variance of tau's MH proposal distribution.
+0.8 is a good default. If set to 0, the algorithm proceeds by
 fixing the global shrinkage parameter \eqn{\tau} to the initial setting
 value.}
 
@@ -127,13 +126,13 @@ index set of the active set:
 
 \deqn{S = \{j\ |\ \xi^{-1}\eta_{j}^{-1} > \delta,\ j=1,2,...,p. \}.}
 
-Recalling the posterior distribution for beta, it is as follows:
+Recalling the posterior distribution for \eqn{\beta}, it is as follows:
 
 \deqn{\beta | y, X, \eta, \xi, \sigma \sim
 N\left(\left(X^{T}X + \left(\xi D \right)^{-1}\right)^{-1}X^{T}y,
 \ \sigma^{2}\left(X^{T}X + \left(\xi D \right)^{-1} \right)^{-1} \right).}
 
-If \eqn{\xi^{-1}\eta_{j}^{-1}} is very small, the posterior of \eqn{\beta}
+If \eqn{\xi \eta_{j}} is very small, the posterior of \eqn{\beta}
 will have a mean and variance close to 0. Therefore, let's set
 \eqn{\xi^{-1}\eta_{j}^{-1}} smaller than \eqn{\delta} to 0 and the size of
 inverse \eqn{M_{\xi, \delta}} matrix is reduced as follows.
@@ -183,23 +182,24 @@ for (i in 1:10) {
 y <- y + e
 
 # Run with auto.threshold option
-result1 <- approx_horseshoe(X, y, iter = 100)
+result1 <- approx_horseshoe(X, y, burn = 0, iter = 100)
 
 # Run with fixed default threshold
-result2 <- approx_horseshoe(X, y, iter = 100, auto.threshold = FALSE)
+result2 <- approx_horseshoe(X, y, burn = 0, iter = 100,
+                            auto.threshold = FALSE)
 
-# Run with fixed, custom thresholds
-result3 <- approx_horseshoe(X, y, iter = 100,
+# Run with fixed custom threshold
+result3 <- approx_horseshoe(X, y, burn = 0, iter = 100,
                             auto.threshold = FALSE, threshold = 1/(2 * p))
 
 # posterior mean
 betahat <- result$BetaHat
 
 # Lower bound of the 95\% credible interval
-post_leftCI <- result$LeftCI
+leftCI <- result$LeftCI
 
 # Upper bound of the 95\% credible interval
-post_RightCI <- result$RightCI
+RightCI <- result$RightCI
 
 }
 \references{

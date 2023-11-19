@@ -66,7 +66,6 @@
 #' every \eqn{t} iteration to estimate the threshold and decide whether to
 #' update.
 #'
-#'
 #' @references Bhattacharya, A., Chakraborty, A., & Mallick, B. K. (2016).
 #' Fast sampling with Gaussian scale mixture priors in high-dimensional
 #' regression. Biometrika, asw042.
@@ -129,23 +128,24 @@
 #' y <- y + e
 #'
 #' # Run with auto.threshold option
-#' result1 <- approx_horseshoe(X, y, iter = 100)
+#' result1 <- approx_horseshoe(X, y, burn = 0, iter = 100)
 #'
 #' # Run with fixed default threshold
-#' result2 <- approx_horseshoe(X, y, iter = 100, auto.threshold = FALSE)
+#' result2 <- approx_horseshoe(X, y, burn = 0, iter = 100,
+#'                             auto.threshold = FALSE)
 #'
-#' # Run with fixed, custom thresholds
-#' result3 <- approx_horseshoe(X, y, iter = 100,
+#' # Run with fixed custom threshold
+#' result3 <- approx_horseshoe(X, y, burn = 0, iter = 100,
 #'                             auto.threshold = FALSE, threshold = 1/(2 * p))
 #'
 #' # posterior mean
 #' betahat <- result$BetaHat
 #'
 #' # Lower bound of the 95% credible interval
-#' post_leftCI <- result$LeftCI
+#' leftCI <- result$LeftCI
 #'
 #' # Upper bound of the 95% credible interval
-#' post_RightCI <- result$RightCI
+#' RightCI <- result$RightCI
 #'
 #' @export
 approx_horseshoe <- function(X, y, burn = 1000, iter = 5000,
@@ -172,9 +172,9 @@ approx_horseshoe <- function(X, y, burn = 1000, iter = 5000,
   }
   betaout <- matrix(0, nrow = nmc, ncol = p)
   etaout <- matrix(0, nrow = nmc, ncol = p)
-  activeout <- matrix(0, nrow = nmc, ncol = p)
   xiout <- rep(0, nmc)
   sigma2out <- rep(0, nmc)
+  activeout <- matrix(0, nrow = nmc, ncol = p)
   # run
   for(i in 1:nmc) {
     log_xi <- stats::rnorm(1, mean = log(xi), sd = s)
@@ -261,10 +261,9 @@ approx_horseshoe <- function(X, y, burn = 1000, iter = 5000,
     # save results
     betaout[i, ] <- new_beta
     etaout[i, ] <- eta
-    activeout[i, active_index] <- 1
     xiout[i] <- xi
     sigma2out[i] <- sigma2
-
+    activeout[i, active_index] <- 1
     # eta update
     eta <- rejection_sampler((new_beta^2)*xi/(2*sigma2), a, b)
     eta <- ifelse(eta <= 2.220446e-16, 2.220446e-16, eta)
