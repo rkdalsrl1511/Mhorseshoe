@@ -2,7 +2,6 @@
 
 export(approx_horseshoe)
 export(exact_horseshoe)
-export(mapprox_horseshoe)
 import(stats)
 importFrom(Rcpp,sourceCpp)
 useDynLib(Mhorseshoe, .registration = TRUE)

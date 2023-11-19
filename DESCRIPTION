@@ -4,14 +4,11 @@ Version: 0.1.0
 Authors@R: c(
     person("Kang", "Mingi", , "leehuimin115@g.skku.edu", role = c("aut","cre")),
     person("Lee", "Kyoungjae", , "leekjstat@gmail.com", role = "aut"))
-Description: The horseshoe estimator is an algorithm frequently used in
-    high-dimensional Bayesian linear models. Although this algorithm has a good
-    effect on variable selection, it incurs high computational costs in
-    high-dimensional sparse data where p >> N for p predictors and N
-    observations. Therefore, an exact horseshoe estimator algorithm function
-    and an approximate algorithm function that can compensate for the
-    computational cost problem were added to enable use in high-dimensional
-    Bayesian linear regression.
+Description: Provides an approximate algorithm for the horseshoe estimator
+    used in Bayesian linear models. Some functions are written in Rcpp, and
+    they exhibit lower computational cost and faster parameter estimation for
+    high-dimensional sparse data. The approximate algorithm is described in 
+    Johndrow et al. (2020) <doi:10.5555/3455716.3455789>.
 Encoding: UTF-8
 Imports: 
     stats,
