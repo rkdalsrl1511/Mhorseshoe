@@ -5,10 +5,12 @@ Authors@R: c(
     person("Kang", "Mingi", , "leehuimin115@g.skku.edu", role = c("aut","cre")),
     person("Lee", "Kyoungjae", , "leekjstat@gmail.com", role = "aut"))
 Description: Provides an approximate algorithm for the horseshoe estimator
-    used in Bayesian linear models. Some functions are written in Rcpp, and
-    they exhibit lower computational cost and faster parameter estimation for
-    high-dimensional sparse data. The approximate algorithm is described in 
-    Johndrow et al. (2020) <doi:10.5555/3455716.3455789>.
+    used in Bayesian linear models. By implementing a sampler with high
+    computational cost in the 'Rcpp' package and using an approximate algorithm
+    that reduces matrix calculation complexity, parameter estimation speed for
+    high-dimensional sparse data is faster. The approximate algorithm is
+    described in Johndrow et al. (2020)
+    <https://dl.acm.org/doi/pdf/10.5555/3455716.3455789>.
 Encoding: UTF-8
 Imports: 
     stats,
