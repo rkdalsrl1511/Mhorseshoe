@@ -10,7 +10,7 @@ Description: Provides an approximate algorithm for the horseshoe estimator
     that reduces matrix calculation complexity, parameter estimation speed for
     high-dimensional sparse data is faster. The approximate algorithm is
     described in Johndrow et al. (2020)
-    <https://dl.acm.org/doi/10.5555/3455716.3455789>.
+    <https://www.jmlr.org/papers/v21/19-536.html>.
 Encoding: UTF-8
 Imports: 
     stats,
