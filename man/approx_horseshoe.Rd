@@ -196,7 +196,7 @@ under this condition, \eqn{p(10000) < 0.01} is satisfied.
 \examples{
 # Making simulation data.
 set.seed(123)
-N <- 50
+N <- 200
 p <- 100
 true_beta <- c(rep(1, 10), rep(0, 90))
 
@@ -221,7 +221,7 @@ result2 <- approx_horseshoe(X, y, burn = 0, iter = 100,
 
 # Run with fixed custom threshold
 result3 <- approx_horseshoe(X, y, burn = 0, iter = 100,
-                            auto.threshold = FALSE, threshold = 1/p)
+                            auto.threshold = FALSE, threshold = 1/(5 * p))
 
 # posterior mean
 betahat <- result1$BetaHat
