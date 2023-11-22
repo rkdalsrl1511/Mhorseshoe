@@ -221,7 +221,7 @@ result2 <- approx_horseshoe(X, y, burn = 0, iter = 100,
 
 # Run with fixed custom threshold
 result3 <- approx_horseshoe(X, y, burn = 0, iter = 100,
-                            auto.threshold = FALSE, threshold = 1/(2 * p))
+                            auto.threshold = FALSE, threshold = 1/p)
 
 # posterior mean
 betahat <- result1$BetaHat
