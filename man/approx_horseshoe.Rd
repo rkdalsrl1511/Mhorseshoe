@@ -215,12 +215,8 @@ y <- y + e
 # Run with auto.threshold option
 result1 <- approx_horseshoe(X, y, burn = 0, iter = 100)
 
-# Run with fixed default threshold
-result2 <- approx_horseshoe(X, y, burn = 0, iter = 100,
-                            auto.threshold = FALSE)
-
 # Run with fixed custom threshold
-result3 <- approx_horseshoe(X, y, burn = 0, iter = 100,
+result2 <- approx_horseshoe(X, y, burn = 0, iter = 100,
                             auto.threshold = FALSE, threshold = 1/(5 * p))
 
 # posterior mean

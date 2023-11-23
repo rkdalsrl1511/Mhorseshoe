@@ -163,14 +163,14 @@ exact_horseshoe <- function(X, y, burn = 1000, iter = 5000, a = 1/5, b = 10,
       v_star <- solve(M, (y / sqrt(sigma2) - v))
       new_beta <- sqrt(sigma2) * (u + U %*% v_star)
     }
+    # eta update
+    eta <- rejection_sampler((new_beta^2)*xi/(2*sigma2), a, b)
+    eta <- ifelse(eta <= 2.220446e-16, 2.220446e-16, eta)
     # save results
     betaout[i, ] <- new_beta
     etaout[i, ] <- eta
     xiout[i] <- xi
     sigma2out[i] <- sigma2
-    # eta update
-    eta <- rejection_sampler((new_beta^2) * xi / (2 * sigma2), a, b)
-    eta <- ifelse(eta <= 2.220446e-16, 2.220446e-16, eta)
   }
   betaout <- betaout[(burn+1):nmc, ]
   lambdaout <- 1/sqrt(etaout[(burn+1):nmc, ])

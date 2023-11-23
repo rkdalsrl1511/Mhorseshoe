@@ -226,24 +226,9 @@ approx_horseshoe <- function(X, y, burn = 1000, iter = 5000,
               "or if you set auto.threshold == FALSE, set the threshold ",
               "argument smaller. Alternatively, run the exact_horseshoe ",
               "function instead of approx_horseshoe and check the results.")
-      betaout <- betaout[1:i, ]
-      lambdaout <- 1/sqrt(etaout[1:i, ])
-      activeout <- activeout[1:i, ]
-      tauout <- 1/sqrt(xiout[1:i])
-      sigma2out <- sigma2out[1:i]
-      betahat <- apply(betaout, 2, mean)
-      lambdahat <- apply(lambdaout, 2, mean)
-      tauhat <- mean(tauout)
-      sigma2hat <- mean(sigma2out)
-      activemean <- sum(activeout)/nrow(activeout)
-      leftci <- apply(betaout, 2, stats::quantile, probs = alpha/2)
-      rightci <- apply(betaout, 2, stats::quantile, probs = 1-alpha/2)
-      result <- list(BetaHat = betahat, LeftCI = leftci, RightCI = rightci,
-                     Sigma2Hat = sigma2hat, TauHat = tauhat, LambdaHat = lambdahat,
-                     ActiveMean = activemean, BetaSamples = betaout,
-                     LambdaSamples = lambdaout, TauSamples = tauout,
-                     Sigma2Samples = sigma2out, ActiveSet = activeout)
-      return(result)
+      burn <- 0
+      nmc <- i
+      break
     }
     Q_s <- Q[active_index, active_index, drop = FALSE]
     X_s <- X[, active_index, drop = FALSE]
@@ -318,15 +303,15 @@ approx_horseshoe <- function(X, y, burn = 1000, iter = 5000,
       v_star <- solve(M, (y/sqrt(sigma2) - v))
       new_beta <- sqrt(sigma2) * (u + U %*% v_star)
     }
+    # eta update
+    eta <- rejection_sampler((new_beta^2)*xi/(2*sigma2), a, b)
+    eta <- ifelse(eta <= 2.220446e-16, 2.220446e-16, eta)
     # save results
     betaout[i, ] <- new_beta
     etaout[i, ] <- eta
     xiout[i] <- xi
     sigma2out[i] <- sigma2
     activeout[i, active_index] <- 1
-    # eta update
-    eta <- rejection_sampler((new_beta^2)*xi/(2*sigma2), a, b)
-    eta <- ifelse(eta <= 2.220446e-16, 2.220446e-16, eta)
     # when use a auto threshold
     if (auto.threshold == TRUE) {
       if (i %% t == 0) {
@@ -341,9 +326,9 @@ approx_horseshoe <- function(X, y, burn = 1000, iter = 5000,
       S <- length(active_index)
     }
   }
-  betaout <- betaout[(burn+1):nmc, ]
-  lambdaout <- 1/sqrt(etaout[(burn+1):nmc, ])
-  activeout <- activeout[(burn+1):nmc, ]
+  betaout <- betaout[(burn+1):nmc, , drop = FALSE]
+  lambdaout <- 1/sqrt(etaout[(burn+1):nmc, , drop = FALSE])
+  activeout <- activeout[(burn+1):nmc, , drop = FALSE]
   tauout <- 1/sqrt(xiout[(burn+1):nmc])
   sigma2out <- sigma2out[(burn+1):nmc]
   betahat <- apply(betaout, 2, mean)
