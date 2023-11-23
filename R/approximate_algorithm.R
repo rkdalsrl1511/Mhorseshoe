@@ -167,12 +167,8 @@
 #' # Run with auto.threshold option
 #' result1 <- approx_horseshoe(X, y, burn = 0, iter = 100)
 #'
-#' # Run with fixed default threshold
-#' result2 <- approx_horseshoe(X, y, burn = 0, iter = 100,
-#'                             auto.threshold = FALSE)
-#'
 #' # Run with fixed custom threshold
-#' result3 <- approx_horseshoe(X, y, burn = 0, iter = 100,
+#' result2 <- approx_horseshoe(X, y, burn = 0, iter = 100,
 #'                             auto.threshold = FALSE, threshold = 1/(5 * p))
 #'
 #' # posterior mean
@@ -221,6 +217,33 @@ approx_horseshoe <- function(X, y, burn = 1000, iter = 5000,
       max_xi <- max(xi, new_xi)
       active_index <- which((1/(eta * max_xi) > threshold))
       S <- length(active_index)
+    }
+    if (S == 0) {
+      warning("All coefficients in the linear model are estimated to be 0, ",
+              "so the algorithm terminates and the sampling results are ",
+              "returned. This problem may be caused by the threshold being ",
+              "set too large. To solve this, Use the auto.threshold option, ",
+              "or if you set auto.threshold == FALSE, set the threshold ",
+              "argument smaller. Alternatively, run the exact_horseshoe ",
+              "function instead of approx_horseshoe and check the results.")
+      betaout <- betaout[1:i, ]
+      lambdaout <- 1/sqrt(etaout[1:i, ])
+      activeout <- activeout[1:i, ]
+      tauout <- 1/sqrt(xiout[1:i])
+      sigma2out <- sigma2out[1:i]
+      betahat <- apply(betaout, 2, mean)
+      lambdahat <- apply(lambdaout, 2, mean)
+      tauhat <- mean(tauout)
+      sigma2hat <- mean(sigma2out)
+      activemean <- sum(activeout)/nrow(activeout)
+      leftci <- apply(betaout, 2, stats::quantile, probs = alpha/2)
+      rightci <- apply(betaout, 2, stats::quantile, probs = 1-alpha/2)
+      result <- list(BetaHat = betahat, LeftCI = leftci, RightCI = rightci,
+                     Sigma2Hat = sigma2hat, TauHat = tauhat, LambdaHat = lambdahat,
+                     ActiveMean = activemean, BetaSamples = betaout,
+                     LambdaSamples = lambdaout, TauSamples = tauout,
+                     Sigma2Samples = sigma2out, ActiveSet = activeout)
+      return(result)
     }
     Q_s <- Q[active_index, active_index, drop = FALSE]
     X_s <- X[, active_index, drop = FALSE]

@@ -1,6 +1,6 @@
 Package: Mhorseshoe
 Title: Approximate Algorithm for Horseshoe Prior
-Version: 0.1.1
+Version: 0.1.2
 Authors@R: c(
     person("Kang", "Mingi", , "leehuimin115@g.skku.edu", role = c("aut","cre")),
     person("Lee", "Kyoungjae", , "leekjstat@gmail.com", role = "aut"))
