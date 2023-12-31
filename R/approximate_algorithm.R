@@ -1,132 +1,42 @@
 #' Run approximate MCMC algorithm for horseshoe prior
 #'
-#' In this function, The algorithm introduced in Section 2.2 of Johndrow et al.
-#' (2020) is implemented, and is a horseshoe estimator that generally considers
-#' the case where \eqn{p>>N}. The assumptions and notations for the model are
-#' the same as those in \code{\link{Mhorseshoe}}. This algorithm introduces a
+#' The approximate MCMC algorithm for the horseshoe prior introduced in
+#' Section 2.2 of Johndrow et al. (2020)
+#'
+#' In this function, the approximate algorithm introduced in Section 2.2 of
+#' Johndrow et al. (2020) is implemented, which improves computation speed when
+#' p >> N. The assumptions and notations for the model are the same as those in
+#' vignette, browseVignettes("Mhorseshoe"). This algorithm introduces a
 #' threshold and uses only a portion of the total \eqn{p} columns for matrix
-#' multiplication, lowering the computational cost compared to the existing
-#' horseshoe estimator. According to Section 3.2 of Johndrow et al. (2020), the
-#' approximate MCMC algorithm applying the methodology constructs an
-#' approximate Markov chain \eqn{P_{\epsilon}} that can converge to an exact
-#' Markov chain \eqn{P}, and acceptable results were confirmed through
-#' empirical analysis of simulation and real data. The "auto.threshold"
-#' argument in this function is an adaptive probability algorithm for threshold
-#' developed in this package, which is an algorithm that estimates and updates
-#' a new threshold through updated shrinkage parameters.
+#' multiplication, reducing the computational cost compared to the existing
+#' MCMC algorithms for the horseshoe prior. According to Section 3.2 of
+#' Johndrow et al. (2020), the approximate MCMC algorithm constructs an
+#' approximate Markov transition operator \eqn{P_{\epsilon}} that can converge
+#' to an exact Markov transition operator \eqn{P}. The "auto.threshold"
+#' argument determines whether to apply the algorithm that adaptively selects
+#' the threshold used in the approximate MCMC algorithm.
 #'
-#' @section Approximate algorithm details:
-#'
-#' Approximate algorithm has the following changes:
-#'
-#' \deqn{D_{\delta} = diag\left(\eta_{j}^{-1}1\left(\xi^{-1}\eta_{j}^{-1}
-#' > \delta,\ j=1,2,...,p. \right) \right),}
-#' \deqn{M_{\xi} \approx M_{\xi, \delta} = I_{N} + \xi^{-1}XD_{\delta}X^{T},}
-#'
-#' Where \eqn{\eta_{j} = \lambda_{j}^{-2}}, \eqn{\lambda_{j}}
-#' are local shrinkage parameters, \eqn{\xi = \tau^{-2}}, \eqn{\tau} is a
-#' global shrinkage parameter, \eqn{1(\cdot)} is an indicator function that
-#' returns \eqn{1} if the conditions in the parentheses are satisfied, and
-#' \eqn{0} otherwise, and \eqn{\delta} is the threshold. The set of
-#' X's columns: \eqn{\{x_{j}\ :\ \xi^{-1}\eta_{j}^{-1} > \delta,\ j = 1,2,...,
-#' p \}} is defined as the active set, and let's define \eqn{S} as the
-#' index set of the active set:
-#'
-#' \deqn{S = \{j\ |\ \xi^{-1}\eta_{j}^{-1} > \delta,\ j=1,2,...,p. \}.}
-#'
-#' Recalling the posterior distribution for \eqn{\beta}, it is as follows:
-#'
-#' \deqn{\beta | y, X, \eta, \xi, \sigma \sim
-#' N\left(\left(X^{T}X + \left(\xi^{-1} D \right)^{-1}\right)^{-1}X^{T}y,
-#' \ \sigma^{2}\left(X^{T}X + \left(\xi^{-1} D \right)^{-1} \right)^{-1}
-#' \right).}
-#'
-#' If \eqn{\xi^{-1} \eta_{j}^{-1}} is very small, the posterior of \eqn{\beta}
-#' will have a mean and variance close to 0. Therefore, let's set
-#' \eqn{\xi^{-1}\eta_{j}^{-1}} smaller than \eqn{\delta} to 0 and the size of
-#' inverse \eqn{M_{\xi, \delta}} matrix is reduced as follows.
-#'
-#' \deqn{length(S)=s_{\delta} \le p, \\ X_{S} \in R^{N \times s_{\delta}},
-#' \quad D_{S} \in R^{s_{\delta} \times s_{\delta}}, \\ M_{\xi, \delta}^{-1} =
-#' \left(I_{N} + \xi^{-1}X_{S}D_{S}X_{S}^{T} \right)^{-1}.}
-#'
-#' \eqn{M_{\xi, \delta}^{-1}} can be expressed using the Woodbury identity
-#' as follows.
-#'
-#' \deqn{M_{\xi, \delta}^{-1} = I_{N} - X_{S}\left(\xi D_{S}^{-1} +
-#' X_{S}^{T}X_{S} \right)^{-1}X_{S}^{T}.}
-#'
-#' \eqn{M_{\xi, \delta}^{-1}}, which reduces the computational cost, is
-#' applied to all parts of this algorithm, \eqn{\beta} samples are extracted
-#' from the posterior using fast sampling(Bhattacharya et al.,2016) as follows.
-#'
-#' \deqn{u \sim N_{p}(0, \xi^{-1}D),\quad f \sim N_{N}(0, I_{N}), \\
-#' v = Xu + f,\quad v^{\star} = M_{\xi, \delta}^{-1}(y/\sigma - v), \\
-#' \beta = \sigma(u + \xi^{-1}D_{\delta}X^{T}v^{\star}).}
-#'
-#' @section Adaptive probability algorithm for threshold update:
-#' If the auto.threshold argument is set to TRUE, this algorithm operates
-#' every \eqn{t} iteration to estimate the threshold and decide whether to
-#' update. In this algorithm, the process of updating a new threshold is added
-#' by applying the properties of the shrinkage weight \eqn{k_{j},\ j=1,2,...,p}
-#' proposed by Piironen and Vehtari (2017). In the prior of \eqn{\beta_{j} \sim
-#' N(0, \sigma^{2}\tau^{2}\lambda_{j}^{2}) = N(0, \sigma^{2}\xi^{-1}
-#' \eta_{j}^{-1})}, the variable \eqn{m_{eff}} is defined as follows.
-#'
-#' \deqn{k_{j} = 1/\left(1+n\xi^{-1}s_{j}^{2}\eta_{j}^{-1} \right),
-#' \quad j=1,2,...,p, \\ m_{eff} = \sum_{j=1}^{p}{\left(1-k_{j} \right)}.}
-#'
-#' The assumptions and notations for the model are the same as those in
-#' \code{\link{Mhorseshoe}}, and \eqn{s_{j},\ j=1,2,...,p} are the diagonal
-#' components of \eqn{X^{T}X}. For the zero components of \eqn{\beta},
-#' \eqn{k_{j}} is derived close to 1, and nonzero's \eqn{k_{j}} is derived
-#' close to 0, so the variable \eqn{m_{eff}}, the sum of \eqn{1-k_{j}}, is
-#' called the effective number of nonzero coefficients. In this algorithm, the
-#' threshold \eqn{\delta} is updated to set
-#' \eqn{s_{\delta} = ceiling(m_{eff})}.
-#'
-#' Adaptive probability is defined to satisfy
-#' Theorem 5(diminishing adaptation condition) of Roberts and Rosenthal (2007).
-#' at \eqn{T}th iteration,
-#'
-#' \deqn{p(T) = exp[p_{0} + p_{1}T],\quad p_{1} < 0,
-#' \quad u \sim U(0, 1), \\ if\ u < p(T),\ update\ \delta\ so\ that\
-#' s_{\delta} = ceiling(m_{eff}).}
-#'
-#' The default is \eqn{p_{0} = 0}, \eqn{p_{1} = -4.6 \times 10^{-4}}, and
-#' under this condition, \eqn{p(10000) < 0.01} is satisfied.
-#'
-#' @references Bhattacharya, A., Chakraborty, A., & Mallick, B. K. (2016).
-#' Fast sampling with Gaussian scale mixture priors in high-dimensional
-#' regression. Biometrika, asw042.
-#'
-#' Johndrow, J., Orenstein, P., & Bhattacharya, A. (2020).
+#' @references Johndrow, J., Orenstein, P., & Bhattacharya, A. (2020).
 #' Scalable Approximate MCMC Algorithms for the Horseshoe Prior. In Journal
-#' of Machine Learning Research (Vol. 21).
-#'
-#' Piironen, J., & Vehtari, A. (2017). Sparsity information and regularization
-#' in the horseshoe and other shrinkage priors. Electronic Journal of
-#' Statistics, 11, 5018-5051.
-#'
-#' Roberts G, Rosenthal J. Coupling and ergodicity of adaptive Markov chain
-#' Monte Carlo algorithms. J Appl Prob. 2007;44:458–475.
+#' of Machine Learning Research, 21, 1-61.
 #'
 #' @inheritParams exact_horseshoe
 #' @param auto.threshold Argument for setting whether to use an algorithm that
 #'  automatically updates the threshold using adaptive probability.
 #' @param threshold Threshold to be used in the approximate MCMC algorithm.
-#'  If you select auto.threshold = FALSE, and threshold = 0(This is the default
-#'  value for the threshold argument), the threshold is set according to the
-#'  sizes of N and p. if \eqn{p < N}, \eqn{\delta = 1/\sqrt{Np}}, else
-#'  \eqn{\delta = 1/p}. Or, you can set your custom value directly through this
-#'  argument. For more information about \eqn{\delta}, see
-#'  \code{\link{Mhorseshoe}} and 4.1 of Johndrow et al. (2020).
+#'  This argument is ignored when auto.threshold=TRUE. If you select
+#'  auto.threshold = FALSE and threshold = 0 (This is the default value for the
+#'  threshold argument), the threshold is set to
+#'  \eqn{\sqrt{p \times min(N, p)}} as suggested in Johndrow et al. (2020). Or,
+#'  you can set your custom value directly through this argument. For more
+#'  information about \eqn{\delta}, browseVignettes("Mhorseshoe") and 4.1 of
+#'  Johndrow et al. (2020).
 #' @param t Threshold update cycle for adaptive probability algorithm when
-#'  auto.threshold is set to TRUE. default is 10.
-#' @param adapt_p0 Parameter \eqn{p_{0}} of adaptive probability,
-#'  \eqn{p(t) = exp[p_{0} + p_{1}t]}. default is \eqn{0}.
-#' @param adapt_p1 Parameter \eqn{a_{1}} of adaptive probability,
-#'  \eqn{p(t) = exp[p_{0} + p_{1}t]}. default is \eqn{-4.6 \times 10^{-4}}.
+#'  auto.threshold is set to TRUE. The default is 10.
+#' @param adapt_p0 A tuning parameter \eqn{p_{0}} of the adaptive probability,
+#'  \eqn{p(t) = exp[p_{0} + p_{1}t]}. The default is \eqn{0}.
+#' @param adapt_p1 A tuning parameter \eqn{a_{1}} of the adaptive probability,
+#'  \eqn{p(t) = exp[p_{0} + p_{1}t]}. The default is \eqn{-4.6 \times 10^{-4}}.
 #' @return \item{BetaHat}{Posterior mean of \eqn{\beta}.}
 #' \item{LeftCI}{Lower bound of \eqn{100(1-\alpha)\%} credible interval for
 #'  \eqn{\beta}.}
@@ -137,13 +47,13 @@
 #' \item{LambdaHat}{Posterior mean of \eqn{\lambda_{j},\ j=1,2,...p.}.}
 #' \item{ActiveMean}{Average number of elements in the active set per iteration
 #'  in this algorithm.}
-#' \item{BetaSamples}{Samples from the posterior of \eqn{\beta}.}
-#' \item{LambdaSamples}{Lambda samples through rejection sampling.}
-#' \item{TauSamples}{Tau samples through MH algorithm.}
-#' \item{Sigma2Samples}{Samples from the posterior of the parameter
-#'  \eqn{sigma^{2}}.}
-#' \item{ActiveSet}{Matrix indicating active elements as 1 and non-active
-#'  elements as 0 per iteration of the MCMC algorithm.}
+#' \item{BetaSamples}{Posterior samples of \eqn{\beta}.}
+#' \item{LambdaSamples}{Posterior samples of local shrinkage parameters.}
+#' \item{TauSamples}{Posterior samples of global shrinkage parameter.}
+#' \item{Sigma2Samples}{Posterior samples of \eqn{sigma^{2}}.}
+#' \item{ActiveSet}{\eqn{\mathbb{R}^{iter \times p}} Matrix indicating active
+#'  elements as 1 and non-active elements as 0 per iteration of the MCMC
+#'  algorithm.}
 #'
 #' @examples
 #' # Making simulation data.
@@ -181,7 +91,7 @@
 #' RightCI <- result1$RightCI
 #'
 #' @export
-approx_horseshoe <- function(X, y, burn = 1000, iter = 5000,
+approx_horseshoe <- function(y, X, burn = 1000, iter = 5000,
                              auto.threshold = TRUE, threshold = 0, tau = 1,
                              s = 0.8, sigma2 = 1, w = 1, alpha = 0.05, a = 0.2,
                              b = 10, t = 10, adapt_p0 = 0,

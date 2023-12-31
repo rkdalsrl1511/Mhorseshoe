@@ -1,35 +1,37 @@
 #' Run exact MCMC algorithm for horseshoe prior
 #'
-#' The exact MCMC algorithm introduced in Section 2.1 of Johndrow et al. (2020)
-#' was implemented in this function. This algorithm is the horseshoe estimator
-#' that updates the global shrinkage parameter \eqn{\tau} using
-#' Metropolis-Hastings algorithm, and uses blocked-Gibbs sampling for
-#' \eqn{(\tau, \beta, \sigma)}. The local shrinkage parameter
-#' \eqn{\lambda_{j},\ j = 1,2,...,p} is updated by the rejection sampler.
+#' The exact MCMC algorithm for the horseshoe prior introduced in section 2.1
+#' of Johndrow et al. (2020).
 #'
-#' See \code{\link{Mhorseshoe}} or browseVignettes("Mhorseshoe").
+#' The exact MCMC algorithm introduced in Section 2.1 of Johndrow et al. (2020)
+#' is implemented in this function. This algorithm uses a blocked-Gibbs
+#' sampler for \eqn{(\tau, \beta, \sigma^2)}, where the global shrinkage
+#' parameter \eqn{\tau} is updated by an Metropolis-Hastings algorithm. The
+#' local shrinkage parameter \eqn{\lambda_{j},\ j = 1,2,...,p} is updated by
+#' the rejection sampler. browseVignettes("Mhorseshoe") for more details.
 #'
 #' @references Johndrow, J., Orenstein, P., & Bhattacharya, A. (2020). Scalable
 #' Approximate MCMC Algorithms for the Horseshoe Prior. In Journal of Machine
-#' Learning Research (Vol. 21).
+#' Learning Research, 21, 1-61.
 #'
 #' @param X Design matrix, \eqn{X \in \mathbb{R}^{N \times p}}.
 #' @param y Response vector, \eqn{y \in \mathbb{R}^{N}}.
-#' @param burn Number of burn-in samples. Default is 1000.
-#' @param iter Number of samples to be drawn from the posterior. Default is
+#' @param burn Number of burn-in samples. The default is 1000.
+#' @param iter Number of samples to be drawn from the posterior. The default is
 #'  5000.
-#' @param a Parameter of the rejection sampler, and it is recommended to leave
-#'  it at the default value, \eqn{a = 1/5}.
-#' @param b Parameter of the rejection sampler, and it is recommended to leave
-#'  it at the default value, \eqn{b = 10}.
+#' @param a A tuning parameter of the rejection sampler, where the default
+#'  value is \eqn{a = 1/5}.
+#' @param b A tuning parameter of the rejection sampler, where the default
+#'  value is \eqn{b = 10}.
 #' @param s \eqn{s^{2}} is the variance of tau's MH proposal distribution.
-#'  0.8 is a good default. If set to 0, the algorithm proceeds by
-#'  fixing the global shrinkage parameter \eqn{\tau} to the initial setting
-#'  value.
+#'  0.8 is a good default. If set to 0, the algorithm proceeds by fixing the
+#'  global shrinkage parameter \eqn{\tau} to the initial setting value.
 #' @param tau Initial value of the global shrinkage parameter \eqn{\tau} when
-#'  starting the algorithm. Default is 1.
-#' @param sigma2 error variance \eqn{\sigma^{2}}. Default is 1.
-#' @param w Parameter of gamma prior for \eqn{\sigma^{2}}. Default is 1.
+#'  starting the algorithm. The default is 1.
+#' @param sigma2 Initial value of error variance \eqn{\sigma^{2}}. The default
+#'  is 1.
+#' @param w A hyperparameter of gamma prior for \eqn{\sigma^{2}}. The default
+#'  is 1.
 #' @param alpha \eqn{100(1-\alpha)\%} credible interval setting argument.
 #' @return \item{BetaHat}{Posterior mean of \eqn{\beta}.}
 #' \item{LeftCI}{Lower bound of \eqn{100(1-\alpha)\%} credible interval for
@@ -77,7 +79,7 @@
 #' RightCI <- result$RightCI
 #'
 #' @export
-exact_horseshoe <- function(X, y, burn = 1000, iter = 5000, a = 1/5, b = 10,
+exact_horseshoe <- function(y, X, burn = 1000, iter = 5000, a = 1/5, b = 10,
                             s = 0.8, tau = 1, sigma2 = 1, w = 1, alpha = 0.05) {
   N <- nrow(X)
   p <- ncol(X)

@@ -87,14 +87,14 @@
 #'
 #' @references Bhattacharya, A., Chakraborty, A., & Mallick, B. K. (2016).
 #' Fast sampling with Gaussian scale mixture priors in high-dimensional
-#' regression. Biometrika, asw042.
+#' regression. Biometrika, 103(4), 985-991.
 #'
 #' Carvalho, C. M., Polson, N. G., & Scott, J. G. (2010). The
 #' horseshoe estimator for sparse signals. Biometrika, 97(2), 465–480.
 #'
 #' Johndrow, J., Orenstein, P., & Bhattacharya, A. (2020). Scalable Approximate
 #' MCMC Algorithms for the Horseshoe Prior. In Journal of Machine Learning
-#' Research (Vol. 21).
+#' Research, 21, 1-61.
 #'
 #' @keywords internal
 #' @useDynLib Mhorseshoe, .registration = TRUE
