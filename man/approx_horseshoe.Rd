@@ -101,16 +101,11 @@ Section 2.2 of Johndrow et al. (2020)
 \details{
 In this function, the approximate algorithm introduced in Section 2.2 of
 Johndrow et al. (2020) is implemented, which improves computation speed when
-p >> N. The assumptions and notations for the model are the same as those in
-vignette, browseVignettes("Mhorseshoe"). This algorithm introduces a
-threshold and uses only a portion of the total \eqn{p} columns for matrix
-multiplication, reducing the computational cost compared to the existing
-MCMC algorithms for the horseshoe prior. According to Section 3.2 of
-Johndrow et al. (2020), the approximate MCMC algorithm constructs an
-approximate Markov transition operator \eqn{P_{\epsilon}} that can converge
-to an exact Markov transition operator \eqn{P}. The "auto.threshold"
-argument determines whether to apply the algorithm that adaptively selects
-the threshold used in the approximate MCMC algorithm.
+p >> N. This algorithm introduces a threshold and uses only a portion of the
+total \eqn{p} columns for matrix multiplication, reducing the computational
+cost compared to the existing MCMC algorithms for the horseshoe prior. The
+"auto.threshold" argument determines whether to apply the algorithm that
+adaptively selects the threshold used in the approximate MCMC algorithm.
 }
 \examples{
 # Making simulation data.

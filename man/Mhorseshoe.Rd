@@ -2,8 +2,8 @@
 % Please edit documentation in R/package-Mhorseshoe.R
 \docType{package}
 \name{Mhorseshoe}
-\alias{Mhorseshoe}
 \alias{Mhorseshoe-package}
+\alias{Mhorseshoe}
 \title{Mhorseshoe: Approximate Algorithm for Horseshoe Prior}
 \description{
 Mhorseshoe is a package for a high-dimensional Bayesian linear

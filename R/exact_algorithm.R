@@ -8,7 +8,7 @@
 #' sampler for \eqn{(\tau, \beta, \sigma^2)}, where the global shrinkage
 #' parameter \eqn{\tau} is updated by an Metropolis-Hastings algorithm. The
 #' local shrinkage parameter \eqn{\lambda_{j},\ j = 1,2,...,p} is updated by
-#' the rejection sampler. browseVignettes("Mhorseshoe") for more details.
+#' the rejection sampler.
 #'
 #' @references Johndrow, J., Orenstein, P., & Bhattacharya, A. (2020). Scalable
 #' Approximate MCMC Algorithms for the Horseshoe Prior. In Journal of Machine
