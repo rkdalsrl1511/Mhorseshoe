@@ -1,15 +1,15 @@
 #' Run approximate MCMC algorithm for horseshoe prior
 #'
-#' The approximate MCMC algorithm for the horseshoe prior introduced in
-#' Section 2.2 of Johndrow et al. (2020)
+#' The approximate MCMC algorithm for the horseshoe prior
 #'
-#' In this function, the approximate algorithm introduced in Section 2.2 of
-#' Johndrow et al. (2020) is implemented, which improves computation speed when
-#' p >> N. This algorithm introduces a threshold and uses only a portion of the
-#' total \eqn{p} columns for matrix multiplication, reducing the computational
-#' cost compared to the existing MCMC algorithms for the horseshoe prior. The
-#' "auto.threshold" argument determines whether to apply the algorithm that
-#' adaptively selects the threshold used in the approximate MCMC algorithm.
+#' This function implements the approximate algorithm introduced in Section
+#' 2.2 of Johndrow et al. (2020) and the method proposed in this package, which
+#' improves computation speed when p >> N. The approximate algorithm introduces
+#' a threshold and uses only a portion of the total \eqn{p} columns for matrix
+#' multiplication, reducing the computational cost compared to the existing
+#' MCMC algorithms for the horseshoe prior. The "auto.threshold" argument
+#' determines whether the threshold used in the algorithm will be updated by
+#' the adaptive method proposed in this package.
 #'
 #' @references Johndrow, J., Orenstein, P., & Bhattacharya, A. (2020).
 #' Scalable Approximate MCMC Algorithms for the Horseshoe Prior. In Journal
@@ -69,11 +69,12 @@
 #' }
 #' y <- y + e
 #'
-#' # Run with auto.threshold option
-#' result1 <- approx_horseshoe(X, y, burn = 0, iter = 100)
+#' # Run with auto.threshold set to TRUE
+#' result1 <- approx_horseshoe(y, X, burn = 0, iter = 100,
+#'                             auto.threshold = TRUE)
 #'
 #' # Run with fixed custom threshold
-#' result2 <- approx_horseshoe(X, y, burn = 0, iter = 100,
+#' result2 <- approx_horseshoe(y, X, burn = 0, iter = 100,
 #'                             auto.threshold = FALSE, threshold = 1/(5 * p))
 #'
 #' # posterior mean

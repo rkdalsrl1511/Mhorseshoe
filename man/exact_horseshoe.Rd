@@ -95,8 +95,8 @@ for (i in 1:10) {
 }
 y <- y + e
 
-# Run
-result <- exact_horseshoe(X, y, burn = 0, iter = 100)
+# Run exact_horseshoe
+result <- exact_horseshoe(y, X, burn = 0, iter = 100)
 
 # posterior mean
 betahat <- result$BetaHat

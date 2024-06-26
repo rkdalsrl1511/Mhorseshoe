@@ -32,8 +32,8 @@ $$L(y\ |\ x, \beta, \sigma^2) = (\frac{1}{\sqrt{2\pi}\sigma})^{-N/2}exp
 
 ```r
 # Run functions from the Mhorseshoe package
-ex_result <- exact_horseshoe(X, y, burn = 5000, iter = 10000)
-ap_result <- approx_horseshoe(X, y, burn = 5000, iter = 10000)
+ex_result <- exact_horseshoe(y, X, burn = 5000, iter = 10000)
+ap_result <- approx_horseshoe(y, X, burn = 5000, iter = 10000)
 
 # posterior mean of beta
 ex_betahat <- ex_result$BetaHat

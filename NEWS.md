@@ -1,6 +1,6 @@
 # Mhorseshoe 0.1.3
 
-* DESCRIPTION file and function descriptions modified.
+* Edit vignette and descriptions
 
 # Mhorseshoe 0.1.2
 
