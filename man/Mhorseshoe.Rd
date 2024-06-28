@@ -16,11 +16,11 @@ predictors and \eqn{N} observations. You can see examples of the use of the
 two algorithms through the vignette, \code{browseVignettes("Mhorseshoe")}.
 }
 \author{
-\strong{Maintainer}: Mingi Kang \email{leehuimin115@g.skku.edu}
+\strong{Maintainer}: Kang Mingi \email{leehuimin115@g.skku.edu}
 
 Authors:
 \itemize{
-  \item Kyoungjae Lee \email{leekjstat@gmail.com}
+  \item Lee Kyoungjae \email{leekjstat@gmail.com}
 }
 
 }
