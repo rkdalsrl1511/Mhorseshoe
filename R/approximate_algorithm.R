@@ -8,30 +8,27 @@
 #' a threshold and uses only a portion of the total \eqn{p} columns for matrix
 #' multiplication, reducing the computational cost compared to the existing
 #' MCMC algorithms for the horseshoe prior. The "auto.threshold" argument
-#' determines whether the threshold used in the algorithm will be updated by
-#' the adaptive method proposed in this package.
+#' determines whether the threshold used in the algorithm will be selected by
+#' the adaptive method proposed in this package. For more information,
+#' browseVignettes("Mhorseshoe").
 #'
 #' @references Johndrow, J., Orenstein, P., & Bhattacharya, A. (2020).
 #' Scalable Approximate MCMC Algorithms for the Horseshoe Prior. In Journal
 #' of Machine Learning Research, 21, 1-61.
 #'
 #' @inheritParams exact_horseshoe
-#' @param auto.threshold Argument for setting whether to use an algorithm that
-#'  automatically updates the threshold using adaptive probability.
-#' @param threshold Threshold to be used in the approximate MCMC algorithm.
-#'  This argument is ignored when auto.threshold=TRUE. If you select
-#'  auto.threshold = FALSE and threshold = 0 (This is the default value for the
-#'  threshold argument), the threshold is set to
-#'  \eqn{\sqrt{p \times min(N, p)}} as suggested in Johndrow et al. (2020). Or,
-#'  you can set your custom value directly through this argument. For more
-#'  information about \eqn{\delta}, browseVignettes("Mhorseshoe") and 4.1 of
-#'  Johndrow et al. (2020).
-#' @param t Threshold update cycle for adaptive probability algorithm when
-#'  auto.threshold is set to TRUE. The default is 10.
-#' @param adapt_p0 A tuning parameter \eqn{p_{0}} of the adaptive probability,
-#'  \eqn{p(t) = exp[p_{0} + p_{1}t]}. The default is \eqn{0}.
-#' @param adapt_p1 A tuning parameter \eqn{a_{1}} of the adaptive probability,
-#'  \eqn{p(t) = exp[p_{0} + p_{1}t]}. The default is \eqn{-4.6 \times 10^{-4}}.
+#' @param auto.threshold Argument to set whether to use the the adaptive
+#' threshold selection method.
+#' @param ... There are additional arguments *threshold*, *a*, *b*, *w*, *t*,
+#' *p0*, and *p1*.
+#' *threshold* is used when auto.threshold=FALSE is selected and threshold is
+#' set directly. The default value is \eqn{threshold = 1/p}. *a* and *b*
+#' are arguments of the internal rejection sampler function,
+#' and the default values
+#' are \eqn{a = 1/5,\ b = 10}. *w* is the argument of the prior for
+#' \eqn{\sigma^{2}}, and the default value is \eqn{w = 1}. *t*, *p0*, and *p1*
+#' are arguments of the adaptive threshold selection method, and the default
+#' values are \eqn{t = 10,\ p0 = 0,\ p1 = -4.6 \times 10^{-4}}.
 #' @return \item{BetaHat}{Posterior mean of \eqn{\beta}.}
 #' \item{LeftCI}{Lower bound of \eqn{100(1-\alpha)\%} credible interval for
 #'  \eqn{\beta}.}
@@ -88,12 +85,21 @@
 #'
 #' @export
 approx_horseshoe <- function(y, X, burn = 1000, iter = 5000,
-                             auto.threshold = TRUE, threshold = 0, tau = 1,
-                             s = 0.8, sigma2 = 1, w = 1, alpha = 0.05, a = 0.2,
-                             b = 10, t = 10, adapt_p0 = 0,
-                             adapt_p1 = -4.6*10^(-4)) {
+                             auto.threshold = TRUE, tau = 1, s = 0.8,
+                             sigma2 = 1, alpha = 0.05, ...) {
+  dots <- list(...)
   N <- nrow(X)
   p <- ncol(X)
+  if (is.null(dots$a)) dots$a <- 0.2
+  if (is.null(dots$b)) dots$b <- 10
+  if (is.null(dots$w)) dots$w <- 1
+  if (auto.threshold == TRUE) {
+    if (is.null(dots$t)) dots$t <- 10
+    if (is.null(dots$p0)) dots$p0 <- 0
+    if (is.null(dots$p1)) dots$p1 <- -4.6*10^(-4)
+  } else {
+    if (is.null(dots$threshold)) dots$threshold <- 1/p
+  }
   eta <- rep(1, p)
   xi <- tau^(-2)
   Q <- t(X) %*% X
@@ -103,11 +109,6 @@ approx_horseshoe <- function(y, X, burn = 1000, iter = 5000,
     active_index <- 1:p
     m_eff <- p
     s2.vec <- diag(Q)
-  } else if (threshold == 0) {
-    threshold <- ifelse(p >= N, 1/p, 1/sqrt(N*p))
-    message("You chose FALSE for the auto.threshold argument. ",
-            "and since threshold = 0, set it to the default value of ",
-            threshold, ".")
   }
   betaout <- matrix(0, nrow = nmc, ncol = p)
   etaout <- matrix(0, nrow = nmc, ncol = p)
@@ -121,17 +122,16 @@ approx_horseshoe <- function(y, X, burn = 1000, iter = 5000,
     # when to use a fixed threshold
     if (auto.threshold == FALSE) {
       max_xi <- max(xi, new_xi)
-      active_index <- which((1/(eta * max_xi) > threshold))
+      active_index <- which((1/(eta * max_xi) > dots$threshold))
       S <- length(active_index)
     }
     if (S == 0) {
-      warning("All coefficients in the linear model are estimated to be 0, ",
+      warning("All coefficients in the model are estimated to be 0, ",
               "so the algorithm terminates and the sampling results are ",
-              "returned. This problem may be caused by the threshold being ",
-              "set too large. To solve this, Use the auto.threshold option, ",
-              "or if you set auto.threshold == FALSE, set the threshold ",
-              "argument smaller. Alternatively, run the exact_horseshoe ",
-              "function instead of approx_horseshoe and check the results.")
+              "returned. if you set auto.threshold == FALSE, set the ",
+              "threshold argument smaller. Alternatively, Run the ",
+              "exact_horseshoe function instead of approx_horseshoe and check ",
+              "the results.")
       burn <- 0
       nmc <- i
       break
@@ -151,9 +151,9 @@ approx_horseshoe <- function(y, X, burn = 1000, iter = 5000,
         new_ymy <- y_square - t(y) %*% X_s %*% new_m
         cM <- (diag(chol(Q_star))^2) / xi
         new_cM <- (diag(chol(new_Q_star))^2) / new_xi
-        curr_ratio <- -sum(log(cM)) / 2 - ((N + w) / 2) * log(w + ymy) -
+        curr_ratio <- -sum(log(cM)) / 2 - ((N + dots$w) / 2) * log(dots$w + ymy) -
           log(sqrt(xi) * (1 + xi))
-        new_ratio <- -sum(log(new_cM)) / 2 - ((N + w) / 2) * log(w + new_ymy) -
+        new_ratio <- -sum(log(new_cM)) / 2 - ((N + dots$w) / 2) * log(dots$w + new_ymy) -
           log(sqrt(new_xi) * (1 + new_xi))
         acceptance_probability <- exp(new_ratio - curr_ratio + log(new_xi) -
                                         log(xi))
@@ -176,9 +176,9 @@ approx_horseshoe <- function(y, X, burn = 1000, iter = 5000,
         new_ymy <- t(y) %*% new_m
         cM <- diag(chol(M))^2
         new_cM <- diag(chol(new_M))^2
-        curr_ratio <- -sum(log(cM))/2 - ((N + w)/2) * log(w + ymy) -
+        curr_ratio <- -sum(log(cM))/2 - ((N + dots$w)/2) * log(dots$w + ymy) -
           log(sqrt(xi) * (1 + xi))
-        new_ratio <- -sum(log(new_cM))/2 - ((N + w)/2) * log(w + new_ymy) -
+        new_ratio <- -sum(log(new_cM))/2 - ((N + dots$w)/2) * log(dots$w + new_ymy) -
           log(sqrt(new_xi) * (1 + new_xi))
         acceptance_probability <- exp(new_ratio - curr_ratio + log(new_xi) -
                                         log(xi))
@@ -191,7 +191,7 @@ approx_horseshoe <- function(y, X, burn = 1000, iter = 5000,
       }
     }
     # sigma update
-    sigma2 <- 1/stats::rgamma(1, shape = (w + N)/2, rate = (w + ymy)/2)
+    sigma2 <- 1/stats::rgamma(1, shape = (dots$w + N)/2, rate = (dots$w + ymy)/2)
     # beta update
     diag_D <- 1 / (eta * xi)
     u <- stats::rnorm(n = p, mean = 0, sd = sqrt(diag_D))
@@ -210,7 +210,7 @@ approx_horseshoe <- function(y, X, burn = 1000, iter = 5000,
       new_beta <- sqrt(sigma2) * (u + U %*% v_star)
     }
     # eta update
-    eta <- rejection_sampler((new_beta^2)*xi/(2*sigma2), a, b)
+    eta <- rejection_sampler((new_beta^2)*xi/(2*sigma2), dots$a, dots$b)
     eta <- ifelse(eta <= 2.220446e-16, 2.220446e-16, eta)
     # save results
     betaout[i, ] <- new_beta
@@ -220,15 +220,15 @@ approx_horseshoe <- function(y, X, burn = 1000, iter = 5000,
     activeout[i, active_index] <- 1
     # when use a auto threshold
     if (auto.threshold == TRUE) {
-      if (i %% t == 0) {
+      if (i %% dots$t == 0) {
         u_i <- stats::runif(1, 0, 1)
-        p_i <- exp(adapt_p0 + adapt_p1 * i)
+        p_i <- exp(dots$p0 + dots$p1 * i)
         if (u_i < p_i) {
           m_eff <- sum(1/((eta*xi)/s2.vec + 1))
         }
       }
-      threshold <- sort(eta)[ceiling(m_eff)]
-      active_index <- which(eta <= threshold)
+      dots$threshold <- sort(eta)[ceiling(m_eff)]
+      active_index <- which(eta <= dots$threshold)
       S <- length(active_index)
     }
   }

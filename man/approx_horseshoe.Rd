@@ -10,17 +10,11 @@ approx_horseshoe(
   burn = 1000,
   iter = 5000,
   auto.threshold = TRUE,
-  threshold = 0,
   tau = 1,
   s = 0.8,
   sigma2 = 1,
-  w = 1,
   alpha = 0.05,
-  a = 0.2,
-  b = 10,
-  t = 10,
-  adapt_p0 = 0,
-  adapt_p1 = -4.6 * 10^(-4)
+  ...
 )
 }
 \arguments{
@@ -33,17 +27,8 @@ approx_horseshoe(
 \item{iter}{Number of samples to be drawn from the posterior. The default is
 5000.}
 
-\item{auto.threshold}{Argument for setting whether to use an algorithm that
-automatically updates the threshold using adaptive probability.}
-
-\item{threshold}{Threshold to be used in the approximate MCMC algorithm.
-This argument is ignored when auto.threshold=TRUE. If you select
-auto.threshold = FALSE and threshold = 0 (This is the default value for the
-threshold argument), the threshold is set to
-\eqn{\sqrt{p \times min(N, p)}} as suggested in Johndrow et al. (2020). Or,
-you can set your custom value directly through this argument. For more
-information about \eqn{\delta}, browseVignettes("Mhorseshoe") and 4.1 of
-Johndrow et al. (2020).}
+\item{auto.threshold}{Argument to set whether to use the the adaptive
+threshold selection method.}
 
 \item{tau}{Initial value of the global shrinkage parameter \eqn{\tau} when
 starting the algorithm. The default is 1.}
@@ -55,25 +40,18 @@ global shrinkage parameter \eqn{\tau} to the initial setting value.}
 \item{sigma2}{Initial value of error variance \eqn{\sigma^{2}}. The default
 is 1.}
 
-\item{w}{A hyperparameter of gamma prior for \eqn{\sigma^{2}}. The default
-is 1.}
-
 \item{alpha}{\eqn{100(1-\alpha)\%} credible interval setting argument.}
 
-\item{a}{A tuning parameter of the rejection sampler, where the default
-value is \eqn{a = 1/5}.}
-
-\item{b}{A tuning parameter of the rejection sampler, where the default
-value is \eqn{b = 10}.}
-
-\item{t}{Threshold update cycle for adaptive probability algorithm when
-auto.threshold is set to TRUE. The default is 10.}
-
-\item{adapt_p0}{A tuning parameter \eqn{p_{0}} of the adaptive probability,
-\eqn{p(t) = exp[p_{0} + p_{1}t]}. The default is \eqn{0}.}
-
-\item{adapt_p1}{A tuning parameter \eqn{a_{1}} of the adaptive probability,
-\eqn{p(t) = exp[p_{0} + p_{1}t]}. The default is \eqn{-4.6 \times 10^{-4}}.}
+\item{...}{There are additional arguments \emph{threshold}, \emph{a}, \emph{b}, \emph{w}, \emph{t},
+\emph{p0}, and \emph{p1}.
+\emph{threshold} is used when auto.threshold=FALSE is selected and threshold is
+set directly. The default value is \eqn{threshold = 1/p}. \emph{a} and \emph{b}
+are arguments of the internal rejection sampler function,
+and the default values
+are \eqn{a = 1/5,\ b = 10}. \emph{w} is the argument of the prior for
+\eqn{\sigma^{2}}, and the default value is \eqn{w = 1}. \emph{t}, \emph{p0}, and \emph{p1}
+are arguments of the adaptive threshold selection method, and the default
+values are \eqn{t = 10,\ p0 = 0,\ p1 = -4.6 \times 10^{-4}}.}
 }
 \value{
 \item{BetaHat}{Posterior mean of \eqn{\beta}.}
@@ -104,8 +82,9 @@ improves computation speed when p >> N. The approximate algorithm introduces
 a threshold and uses only a portion of the total \eqn{p} columns for matrix
 multiplication, reducing the computational cost compared to the existing
 MCMC algorithms for the horseshoe prior. The "auto.threshold" argument
-determines whether the threshold used in the algorithm will be updated by
-the adaptive method proposed in this package.
+determines whether the threshold used in the algorithm will be selected by
+the adaptive method proposed in this package. For more information,
+browseVignettes("Mhorseshoe").
 }
 \examples{
 # Making simulation data.
