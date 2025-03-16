@@ -9,13 +9,11 @@ exact_horseshoe(
   X,
   burn = 1000,
   iter = 5000,
-  a = 1/5,
-  b = 10,
-  s = 0.8,
   tau = 1,
+  s = 0.8,
   sigma2 = 1,
-  w = 1,
-  alpha = 0.05
+  alpha = 0.05,
+  ...
 )
 }
 \arguments{
@@ -28,26 +26,22 @@ exact_horseshoe(
 \item{iter}{Number of samples to be drawn from the posterior. The default is
 5000.}
 
-\item{a}{A tuning parameter of the rejection sampler, where the default
-value is \eqn{a = 1/5}.}
-
-\item{b}{A tuning parameter of the rejection sampler, where the default
-value is \eqn{b = 10}.}
+\item{tau}{Initial value of the global shrinkage parameter \eqn{\tau} when
+starting the algorithm. The default is 1.}
 
 \item{s}{\eqn{s^{2}} is the variance of tau's MH proposal distribution.
 0.8 is a good default. If set to 0, the algorithm proceeds by fixing the
 global shrinkage parameter \eqn{\tau} to the initial setting value.}
 
-\item{tau}{Initial value of the global shrinkage parameter \eqn{\tau} when
-starting the algorithm. The default is 1.}
-
 \item{sigma2}{Initial value of error variance \eqn{\sigma^{2}}. The default
 is 1.}
 
-\item{w}{A hyperparameter of gamma prior for \eqn{\sigma^{2}}. The default
-is 1.}
-
 \item{alpha}{\eqn{100(1-\alpha)\%} credible interval setting argument.}
+
+\item{...}{There are additional arguments \emph{threshold}, \emph{a}, \emph{b}, and \emph{w}.
+\emph{a} and \emph{b} are arguments of the internal rejection sampler function, and the
+default values are \eqn{a = 1/5,\ b = 10}. \emph{w} is the argument of the prior
+for \eqn{\sigma^{2}}, and the default value is \eqn{w = 1}.}
 }
 \value{
 \item{BetaHat}{Posterior mean of \eqn{\beta}.}

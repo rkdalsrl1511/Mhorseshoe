@@ -19,10 +19,6 @@
 #' @param burn Number of burn-in samples. The default is 1000.
 #' @param iter Number of samples to be drawn from the posterior. The default is
 #'  5000.
-#' @param a A tuning parameter of the rejection sampler, where the default
-#'  value is \eqn{a = 1/5}.
-#' @param b A tuning parameter of the rejection sampler, where the default
-#'  value is \eqn{b = 10}.
 #' @param s \eqn{s^{2}} is the variance of tau's MH proposal distribution.
 #'  0.8 is a good default. If set to 0, the algorithm proceeds by fixing the
 #'  global shrinkage parameter \eqn{\tau} to the initial setting value.
@@ -30,9 +26,11 @@
 #'  starting the algorithm. The default is 1.
 #' @param sigma2 Initial value of error variance \eqn{\sigma^{2}}. The default
 #'  is 1.
-#' @param w A hyperparameter of gamma prior for \eqn{\sigma^{2}}. The default
-#'  is 1.
 #' @param alpha \eqn{100(1-\alpha)\%} credible interval setting argument.
+#' @param ... There are additional arguments *threshold*, *a*, *b*, and *w*.
+#' *a* and *b* are arguments of the internal rejection sampler function, and the
+#' default values are \eqn{a = 1/5,\ b = 10}. *w* is the argument of the prior
+#' for \eqn{\sigma^{2}}, and the default value is \eqn{w = 1}.
 #' @return \item{BetaHat}{Posterior mean of \eqn{\beta}.}
 #' \item{LeftCI}{Lower bound of \eqn{100(1-\alpha)\%} credible interval for
 #'  \eqn{\beta}.}
@@ -79,8 +77,12 @@
 #' RightCI <- result$RightCI
 #'
 #' @export
-exact_horseshoe <- function(y, X, burn = 1000, iter = 5000, a = 1/5, b = 10,
-                            s = 0.8, tau = 1, sigma2 = 1, w = 1, alpha = 0.05) {
+exact_horseshoe <- function(y, X, burn = 1000, iter = 5000,tau = 1, s = 0.8,
+                            sigma2 = 1, alpha = 0.05, ...) {
+  dots <- list(...)
+  if (is.null(dots$a)) dots$a <- 0.2
+  if (is.null(dots$b)) dots$b <- 10
+  if (is.null(dots$w)) dots$w <- 1
   N <- nrow(X)
   p <- ncol(X)
   eta <- rep(1, p)
@@ -108,9 +110,9 @@ exact_horseshoe <- function(y, X, burn = 1000, iter = 5000, a = 1/5, b = 10,
         new_ymy <- y_square - t(y) %*% X %*% new_m
         cM <- (diag(chol(Q_star))^2)/xi
         new_cM <- (diag(chol(new_Q_star))^2)/new_xi
-        curr_ratio <- -sum(log(cM))/2 - ((N + w)/2) * log(w+ymy) -
+        curr_ratio <- -sum(log(cM))/2 - ((N + dots$w)/2) * log(dots$w+ymy) -
           log(sqrt(xi) * (1 + xi))
-        new_ratio <- -sum(log(new_cM))/2 - ((N + w)/2) * log(w + new_ymy) -
+        new_ratio <- -sum(log(new_cM))/2 - ((N + dots$w)/2) * log(dots$w + new_ymy) -
           log(sqrt(new_xi) * (1 + new_xi))
         acceptance_probability <- exp(new_ratio - curr_ratio + log(new_xi) -
                                         log(xi))
@@ -133,9 +135,9 @@ exact_horseshoe <- function(y, X, burn = 1000, iter = 5000, a = 1/5, b = 10,
         new_ymy <- t(y) %*% new_m
         cM <- diag(chol(M))^2
         new_cM <- diag(chol(new_M))^2
-        curr_ratio <- -sum(log(cM))/2 - ((N + w)/2) * log(w + ymy) -
+        curr_ratio <- -sum(log(cM))/2 - ((N + dots$w)/2) * log(dots$w + ymy) -
           log(sqrt(xi) * (1 + xi))
-        new_ratio <- -sum(log(new_cM))/2 - ((N + w)/2) * log(w + new_ymy) -
+        new_ratio <- -sum(log(new_cM))/2 - ((N + dots$w)/2) * log(dots$w + new_ymy) -
           log(sqrt(new_xi) * (1 + new_xi))
         acceptance_probability <- exp(new_ratio - curr_ratio + log(new_xi) -
                                         log(xi))
@@ -148,7 +150,7 @@ exact_horseshoe <- function(y, X, burn = 1000, iter = 5000, a = 1/5, b = 10,
       }
     }
     # sigma update
-    sigma2 <- 1/stats::rgamma(1, shape = (w + N)/2, rate = (w + ymy)/2)
+    sigma2 <- 1/stats::rgamma(1, shape = (dots$w + N)/2, rate = (dots$w + ymy)/2)
     # beta update
     diag_D <- 1/(eta * xi)
     u <- stats::rnorm(n = p, mean = 0, sd = sqrt(diag_D))
@@ -166,7 +168,7 @@ exact_horseshoe <- function(y, X, burn = 1000, iter = 5000, a = 1/5, b = 10,
       new_beta <- sqrt(sigma2) * (u + U %*% v_star)
     }
     # eta update
-    eta <- rejection_sampler((new_beta^2)*xi/(2*sigma2), a, b)
+    eta <- rejection_sampler((new_beta^2)*xi/(2*sigma2), dots$a, dots$b)
     eta <- ifelse(eta <= 2.220446e-16, 2.220446e-16, eta)
     # save results
     betaout[i, ] <- new_beta
