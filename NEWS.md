@@ -1,3 +1,7 @@
+# Mhorseshoe 0.1.4
+
+* Minor fixes to documentation and function arguments.
+
 # Mhorseshoe 0.1.3
 
 * Edit vignette and descriptions
