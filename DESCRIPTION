@@ -1,6 +1,6 @@
 Package: Mhorseshoe
 Title: Approximate Algorithm for Horseshoe Prior
-Version: 0.1.4
+Version: 0.1.5
 Authors@R: c(
     person("Kang", "Mingi", , "leehuimin115@g.skku.edu", role = c("aut","cre")),
     person("Lee", "Kyoungjae", , "leekjstat@gmail.com", role = "aut"))
@@ -13,13 +13,12 @@ Imports:
     Rcpp (>= 1.0.11)
 LinkingTo: Rcpp
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 License: MIT + file LICENSE
 Suggests: 
     knitr,
     rmarkdown,
     ggplot2,
-    horseshoe,
     testthat (>= 3.0.0)
 VignetteBuilder: knitr
 Config/testthat/edition: 3

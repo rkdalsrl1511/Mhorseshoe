@@ -14,7 +14,6 @@ knitr::opts_chunk$set(
 )
 library(Mhorseshoe)
 library(ggplot2)
-library(horseshoe)
 ```
 
 In this vignette, the functions exact_horseshoe, approx_horseshoe are explained 
@@ -90,35 +89,18 @@ y <- y + e
 
 For the corresponding simulation data, the results were compared with the 
 horseshoe function of the horseshoe package. We fit the data to the 
-horseshoe and exact_horseshoe functions and plot the results for the first 100 
+exact_horseshoe function and plot the results for the first 100 
 indices, including the first 50 indices that are non-zero coefficients.
 
 ```{r fig.width = 6, fig.height= 4}
-# horseshoe in horseshoe package.
-horseshoe_result <- horseshoe::horseshoe(y, X, method.tau = "halfCauchy",
-                                         method.sigma = "Jeffreys",
-                                         burn = 0, nmc = 500)
-
 # exact_horseshoe in Mhorseshoe package.
 exact_horseshoe_result <- exact_horseshoe(y, X, burn = 0, iter = 500)
 
 df <- data.frame(index = 1:100,
-                 horseshoe_BetaHat = horseshoe_result$BetaHat[1:100],
-                 horseshoe_LeftCI = horseshoe_result$LeftCI[1:100],
-                 horseshoe_RightCI = horseshoe_result$RightCI[1:100],
                  exhorseshoe_BetaHat = exact_horseshoe_result$BetaHat[1:100],
                  exhorseshoe_LeftCI = exact_horseshoe_result$LeftCI[1:100],
                  exhorseshoe_RightCI = exact_horseshoe_result$RightCI[1:100],
                  true_beta = true_beta[1:100])
-
-# Estimation results of the horseshoe in horseshoe package.
-ggplot(data = df, aes(x = index, y = true_beta)) + 
-  geom_point(size = 2) + 
-  geom_point(aes(x = index, y = horseshoe_BetaHat), size = 2, col = "red") +
-  geom_errorbar(aes(ymin = horseshoe_LeftCI,
-                    ymax = horseshoe_RightCI), width = .1, col = "red") +
-  labs(title = "95% Credible intervals of the horseshoe in horseshoe package", 
-       y = "beta")
 
 # Estimation results of the exact_horseshoe in Mhorseshoe package.
 ggplot(data = df, aes(x = index, y = true_beta)) + 
@@ -130,10 +112,6 @@ ggplot(data = df, aes(x = index, y = true_beta)) +
   labs(title = "95% Credible intervals of the exact_horseshoe in Mhorseshoe 
        package", y = "beta")
 ```
-
-The results of both functions are the same. Both functions estimate that 
-95% of the credible intervals for all non-zero indices except 4, 36, 41, and 46 
-include 1.
 
 # 2. Modified approximate algorithm
 
@@ -248,7 +226,8 @@ ggplot(data = data.frame(X = 1:500,
   scale_color_manual(name = "algorithm",
                      values = c("black", "red", "blue"), 
                      breaks = c("exact", "approx", "modified_approx"), 
-                     labels = c("exact", "approx", "modified_approx"))
+                     labels = c("exact", "approx", "modified_approx")) +
+  labs(y = "Number of active indexes", x = "iterations")
 ```
 
 # References
